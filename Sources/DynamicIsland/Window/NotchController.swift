@@ -43,7 +43,6 @@ final class NotchController {
         self.model = model
         self.state = IslandState(metrics: NotchController.metrics(for: Self.targetScreen()))
         buildWindow()
-        buildLockWindow()
         startMouseTracking()
         observeScreenChanges()
         observeFullscreen()

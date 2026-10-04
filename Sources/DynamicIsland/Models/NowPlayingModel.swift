@@ -47,7 +47,17 @@ final class NowPlayingModel: ObservableObject {
     private func startPauseLinger() {
         pauseLingerWork?.cancel()
         pausedLingering = true
-        let work = DispatchWorkItem { [weak self] in self?.pausedLingering = false }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.pausedLingering = false
+            // The pop-out is hidden now — drop the cover to reclaim memory. It's
+            // re-fetched (keyed on track) the next time playback resumes/shows.
+            // `accent` is kept so the visualizer keeps its album color on resume.
+            if !self.isPlaying {
+                self.artwork = nil
+                self.lastArtworkKey = nil
+            }
+        }
         pauseLingerWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: work)
     }
@@ -61,10 +71,13 @@ final class NowPlayingModel: ObservableObject {
         guard let url = URL(string: urlString) else { return }
         URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
             guard let data, let image = NSImage(data: data) else { return }
+            // Accent comes from the full-res cover (best color for the visualizer);
+            // only the small thumbnail is kept in memory for the icon.
             let color = Self.accentColor(from: image)   // compute off-main (dataTask completion)
+            let thumb = Self.downsample(image, to: 64)
             Task { @MainActor in
                 guard let self, self.lastArtworkKey == urlString else { return }
-                self.artwork = image
+                self.artwork = thumb
                 self.accent = color
             }
         }.resume()
@@ -73,11 +86,13 @@ final class NowPlayingModel: ObservableObject {
     /// Fetch the current system artwork off-main; apply only if still the same track.
     private func loadSystemArtwork(forToken token: String) {
         DispatchQueue.global(qos: .utility).async { [weak self] in
-            let image = SystemNowPlaying.fetchArtwork()
-            let color = image.map { Self.accentColor(from: $0) } ?? .white   // compute off-main
+            let full = SystemNowPlaying.fetchArtwork()
+            // Accent from the full-res cover; keep only the thumbnail for the icon.
+            let color = full.map { Self.accentColor(from: $0) } ?? .white   // compute off-main
+            let thumb = full.map { Self.downsample($0, to: 64) }
             Task { @MainActor in
                 guard let self, self.title == token else { return }
-                self.artwork = image
+                self.artwork = thumb
                 self.accent = color
             }
         }
@@ -293,9 +308,30 @@ final class NowPlayingModel: ObservableObject {
 
     // MARK: Helpers
 
-    /// Downscale the artwork to 1px and read the pixel to get a representative color.
-    /// `nonisolated` so artwork sources can compute it off the main thread (it only
-    /// touches the passed-in image, no actor state).
+    /// Downscale an image to fit `maxDim`, via Core Graphics so it's thread-safe
+    /// and cheap. Covers arrive at 640–1400px but we only ever show them ~40px, so
+    /// we keep a thumbnail (~16 KB) instead of the multi-MB decoded original.
+    nonisolated static func downsample(_ image: NSImage, to maxDim: CGFloat) -> NSImage {
+        guard let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return image }
+        let w = CGFloat(cg.width), h = CGFloat(cg.height)
+        guard w > 0, h > 0 else { return image }
+        let scale = min(maxDim / w, maxDim / h, 1)
+        if scale >= 1 { return image }                      // already small enough
+        let nw = Int((w * scale).rounded()), nh = Int((h * scale).rounded())
+        guard let ctx = CGContext(data: nil, width: max(nw, 1), height: max(nh, 1),
+                                  bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return image }
+        ctx.interpolationQuality = .high
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: nw, height: nh))
+        guard let out = ctx.makeImage() else { return image }
+        return NSImage(cgImage: out, size: NSSize(width: nw, height: nh))
+    }
+
+    /// Downscale the artwork to 1px and read the pixel to get a representative color
+    /// for the visualizer. Fed the full-res cover. `nonisolated` so artwork sources
+    /// compute it off the main thread (it only touches the passed-in image).
     nonisolated static func accentColor(from image: NSImage) -> Color {
         guard let tiff = image.tiffRepresentation,
               let bitmap = NSBitmapImageRep(data: tiff),

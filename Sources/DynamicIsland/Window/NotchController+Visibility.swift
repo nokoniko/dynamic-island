@@ -28,15 +28,17 @@ extension NotchController {
     }
 
     private func setLocked(_ locked: Bool) {
-        guard lockPanel != nil else { return }
         if locked {
+            // Built lazily on the first lock — most sessions never lock, so we don't
+            // pay for a second hosting view up front.
+            if lockPanel == nil { buildLockWindow() }
             positionWindow()                       // re-center in case the display changed
             lockPanel.orderFrontRegardless()
             // Must re-add every time it's shown — the space assignment doesn't
             // survive orderOut. No-op if SkyLight is unavailable.
             SkyLightSpace.shared?.add(window: lockPanel)
         } else {
-            lockPanel.orderOut(nil)
+            lockPanel?.orderOut(nil)
         }
     }
 
