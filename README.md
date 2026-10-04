@@ -17,6 +17,8 @@
 
 After that it updates itself. Needs macOS 14+, an Apple Silicon Mac, and the Xcode Command Line Tools (`xcode-select --install`).
 
+if you want to use it for windows go to https://github.com/bisonactual/Nikos-Dynamic-Island/ 
+
 ## What it does
 
 - **Now playing** — album art peeks out left of the notch, a live equalizer on the right. Works with Spotify, Apple Music and browsers (YouTube, SoundCloud…). When nothing plays it's exactly notch-sized, so you don't see it.
@@ -39,4 +41,4 @@ Builds `DynamicIsland.app` and offers to move it to Applications. Needs Swift (X
 
 ## How it works
 
-[ARCHITECTURE.md](ARCHITECTURE.md) is the full tour of the code base — also the right context to hand an AI if you want to keep vibecoding ts.
+[ARCHITECTURE.md](ARCHITECTURE.md) is the full tour of the code base — also the right context to hand an AI if you want to keep vibecoding ts
