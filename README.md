@@ -26,7 +26,7 @@ if you want to use it for windows go to https://github.com/bisonactual/Nikos-Dyn
 - **Click to switch** — click the island to jump to the app that's playing. It hides while that app is in front, and in fullscreen.
 - **Charging** — plug in and a ring fills up to your battery level.
 - **Lock screen** — a lock icon next to the notch while the screen is locked.
-- **Auto-updates** — only installs builds signed with the project's key. Menu bar icon → **Se etter oppdateringer…**
+- **Auto-updates** — only installs builds signed with the project's key. Menu bar icon → **Check for Updates…**
 
 Lives in the menu bar, no Dock icon, ~30 MB of RAM.
 
