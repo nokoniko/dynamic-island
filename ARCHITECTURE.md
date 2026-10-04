@@ -40,7 +40,8 @@ Core behaviors:
 - **Lock detection exists but cannot be shown on the lock screen** (see §8).
 
 Design constraints the user cares about:
-- Keep RAM low (target < 50 MB; currently ~41–46 MB).
+- Keep RAM low (target < 50 MB; currently ~27–30 MB phys_footprint for the app,
+  plus ~5 MB for the python3 helper).
 - Do **not** duplicate anything macOS already shows (privacy dots, screen-record
   indicator, AirPods, volume HUD). All of those were explicitly rejected.
 - Should work when shared with others without special setup.

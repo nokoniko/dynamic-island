@@ -1,61 +1,42 @@
-# Dynamic Island for Mac
+<p align="center">
+  <img src="Assets/AppIcon.svg" width="180" alt="Dynamic Island icon">
+</p>
 
-Ts vibecoeded as hell but free so who cares 🤑
+<h1 align="center">Dynamic Island for Mac</h1>
 
-## functions
+<p align="center">
+  A Dynamic Island for your MacBook's notch.<br>
+  Ts vibecoeded as hell but free so who cares 🤑
+</p>
 
-- **Overlays the notch** on the main display (geometry is automatically retrieved via
-  `safeAreaInsets` + `auxiliaryTopLeft/RightArea`). On displays without a notch, a floating pill is drawn.
-- **Compact state:** when music is playing, album art peeks out on the left and a live equalizer on the right.
-  Idle = exactly notch-sized (invisible).
-- **Track-change flip:** the album art does a coin flip and reveals the new cover when the song changes.
-- **Click to switch:** clicking the island jumps to whatever app owns the current track. It hides itself while
-  that app is already frontmost, and while anything is fullscreen (no more hover-to-expand).
-- **Lock screen:** a lock icon shows to the left of the notch while the screen is locked (drawn via a private
-  SkyLight space above loginwindow).
-- **Charging flourish:** a quick ⚡ + battery% when you plug in power.
-- **Now Playing source:** the system-wide source (same one Control Center uses — covers *every* app, browsers
-  included). `MediaRemote` is blocked for ad-hoc-signed apps, so a tiny helper dylib is loaded inside Apple-signed
-  `/usr/bin/python3`. **Spotify / Apple Music / browsers** are also read via AppleScript for instant play/pause.
-- **Playback control:** routed through `MediaRemote` (or AppleScript for Spotify/Music/browsers) so it always hits
-  the app that's actually playing.
-- **Agent app:** no Dock icon, just a small icon in the menu bar.
-- **Auto-updates:** checks GitHub Releases on launch and once a day, and only installs builds signed with
-  the project's key. You can also hit **Se etter oppdateringer…** in the menu bar icon.
+## Install
 
-Stays light on RAM (~45 MB) via a single long-lived helper process — no per-second spawning.
+1. Download `DynamicIsland-x.y.z.zip` from the [latest release](https://github.com/nokoniko/dynamic-island/releases/latest) and unzip it.
+2. Move `DynamicIsland.app` to **Applications**.
+3. First launch: right-click → **Open** (it isn't notarized, so macOS asks once).
 
-## build and run
+After that it updates itself. Needs macOS 14+, an Apple Silicon Mac, and the Xcode Command Line Tools (`xcode-select --install`).
 
-fast under deving:
+## What it does
 
-```bash
-swift run
-```
+- **Now playing** — album art peeks out left of the notch, a live equalizer on the right. Works with Spotify, Apple Music and browsers (YouTube, SoundCloud…). When nothing plays it's exactly notch-sized, so you don't see it.
+- **Track changes** — the cover does a coin flip to reveal the new one.
+- **Click to switch** — click the island to jump to the app that's playing. It hides while that app is in front, and in fullscreen.
+- **Charging** — plug in and a ring fills up to your battery level.
+- **Lock screen** — a lock icon next to the notch while the screen is locked.
+- **Auto-updates** — only installs builds signed with the project's key. Menu bar icon → **Se etter oppdateringer…**
 
-Build a real `.app` that you can double-click, move to `/Applications`, or add to Login Items:
+Lives in the menu bar, no Dock icon, ~30 MB of RAM.
+
+## Build from source
 
 ```bash
 cd builder
 cargo run
 ```
 
-if you wan to open the app later do
+Builds `DynamicIsland.app` and offers to move it to Applications. Needs Swift (Xcode Command Line Tools) and Rust. For quick iteration there's `swift run`, and if u r a lazy bum, `./build.sh`.
 
-```bash
-open DynamicIsland.app
-```
-if u r a lazy bum build the bash script with
+## How it works
 
-```bash
-chmod +x build.sh
-```
-then do
-
-```bash
-./build.sh
-```
-
-## Misc
-
-if you want to continue vibecoding ts you can use `ARCHITECTURE.md` to get the correct context about the cb(slang for code base)
+[ARCHITECTURE.md](ARCHITECTURE.md) is the full tour of the code base — also the right context to hand an AI if you want to keep vibecoding ts.

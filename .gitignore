@@ -1,18 +1,22 @@
-# Build artifacts
+# Build output
 .build/
 DynamicIsland.app/
-
-# Rust
+dist/
 builder/target/
 
-# macOS
-.DS_Store
+# Local only: the maintainer's release tool, Cargo env settings, signing keys
+builder/src/bin/
+.cargo/
+*signing_key*
 
-# Xcode / SPM
+# Xcode / SwiftPM
 *.xcodeproj
 .swiftpm/
 Package.resolved
 
+# macOS
+.DS_Store
 
+# AI agent notes
 CLAUDE.md
 AGENT.md
