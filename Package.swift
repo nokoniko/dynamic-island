@@ -12,12 +12,6 @@ let package = Package(
             path: "Sources/DynamicIsland",
             swiftSettings: [
                 .swiftLanguageMode(.v5)
-            ],
-            linkerSettings: [
-                .linkedFramework("AppKit"),
-                .linkedFramework("SwiftUI"),
-                .linkedFramework("Combine"),
-                .linkedFramework("ScriptingBridge")
             ]
         )
     ]
