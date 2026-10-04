@@ -46,8 +46,8 @@ Design constraints the user cares about:
   indicator, AirPods, volume HUD). All of those were explicitly rejected.
 - Should work when shared with others without special setup.
 
-The user communicates in Norwegian; UI strings are Norwegian ("Ingen avspilling",
-"Lader", "Avslutt").
+The user communicates in Norwegian, but all UI strings are **English** ("Check for
+Updates…", "Quit", the update dialogs) — the app is shared publicly.
 
 ## 2. Project layout
 
@@ -376,8 +376,8 @@ are private and may change across macOS releases — hence the fail-silently des
 ## 9. Other components
 
 - `AppDelegate.swift` — creates the menu-bar `NSStatusItem` (SF Symbol
-  `capsule.fill`), menu = "Dynamic Island <version>" + "Se etter oppdateringer…" +
-  "Avslutt"; owns the model, `NotchController` and `Updater`; starts the model and
+  `capsule.fill`), menu = "Dynamic Island <version>" + "Check for Updates…" +
+  "Quit"; owns the model, `NotchController` and `Updater`; starts the model and
   the updater. (A timer feature was added then **removed** entirely at the user's
   request — don't reintroduce it.)
 - `PowerMonitor.swift` — IOKit.ps; `onPlugChange(Bool)` callback + `level` (battery
@@ -453,7 +453,7 @@ gitignored. The tag is created from what's pushed, so push first.
 **In the app** (`Updater/`):
 - `Updater` reads `DIUpdateRepo` + `DIUpdatePublicKey`; if either is missing, or
   the app isn't running from a `.app` bundle (`swift run`), it stays off. It checks
-  10 s after launch and every 24 h; "Se etter oppdateringer…" checks on demand.
+  10 s after launch and every 24 h; "Check for Updates…" checks on demand.
   Background checks are silent unless there's an update (and not one the user
   chose to skip — stored in UserDefaults `DIUpdaterSkippedVersion`).
 - `ReleaseFeed` calls `GET /repos/<repo>/releases/latest` (drafts/prereleases are
