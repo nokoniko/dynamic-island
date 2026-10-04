@@ -52,9 +52,14 @@ The user communicates in Norwegian; UI strings are Norwegian ("Ingen avspilling"
 
 ```
 Package.swift                      swift-tools 6.0, macOS v14, .v5 language mode
-builder/                           Rust build tool (replaces the old build_app.sh):
-                                   swift build → compile dylib → assemble + ad-hoc
-                                   sign .app → prompt to install/open
+VERSION                            the app version (single source of truth)
+builder/                           Rust build tool (`cargo run` builds the .app):
+  src/lib.rs                       shared build steps (plist, icon, signing…)
+  src/main.rs                      `cargo run` — build, optionally install/open
+  src/bin/release.rs               maintainer-only, GITIGNORED (not in the repo):
+                                   keygen + build/zip/sign/publish a release
+Assets/AppIcon.svg                 app icon source (rasterized at build time)
+Assets/update_public_key.txt       public Ed25519 key for updates (from keygen)
 Helpers/mrhelper.c                 C bridge to the private MediaRemote framework
 Sources/DynamicIsland/
   App/
@@ -87,6 +92,10 @@ Sources/DynamicIsland/
     NotchController+Charging.swift     the plug-in battery flourish
     NotchController+Visibility.swift   hide in fullscreen, lock-screen lock icon
     SkyLightSpace.swift            private SkyLight bridge for the lock screen
+  Updater/
+    Updater.swift                  schedule, prompt, orchestrate (menu + daily check)
+    ReleaseFeed.swift              GitHub Releases API + version comparison
+    UpdateInstaller.swift          download, verify signature, unpack, swap, relaunch
 ```
 
 `NowPlayingInfo` is the single metadata struct everything converges on:
@@ -366,9 +375,10 @@ are private and may change across macOS releases — hence the fail-silently des
 ## 9. Other components
 
 - `AppDelegate.swift` — creates the menu-bar `NSStatusItem` (SF Symbol
-  `capsule.fill`), menu = "Dynamic Island" + "Avslutt"; owns the model +
-  `NotchController`; starts the model. (A timer feature was added then **removed**
-  entirely at the user's request — don't reintroduce it.)
+  `capsule.fill`), menu = "Dynamic Island <version>" + "Se etter oppdateringer…" +
+  "Avslutt"; owns the model, `NotchController` and `Updater`; starts the model and
+  the updater. (A timer feature was added then **removed** entirely at the user's
+  request — don't reintroduce it.)
 - `PowerMonitor.swift` — IOKit.ps; `onPlugChange(Bool)` callback + `level` (battery
   %). An `initialized` flag suppresses the first reading so the flourish doesn't
   fire at launch.
@@ -377,27 +387,97 @@ are private and may change across macOS releases — hence the fail-silently des
 ## 10. Build & run
 
 ```bash
-cd builder && cargo run        # build + assemble + ad-hoc sign DynamicIsland.app,
+cd builder && cargo run        # build + assemble + sign DynamicIsland.app,
                                # then prompts: move to /Applications? open now?
 open DynamicIsland.app         # run (if you answered no to the open prompt)
 pkill -f DynamicIsland.app     # quit
+
+# maintainer only — needs the local, gitignored builder/src/bin/release.rs:
+cd builder && cargo run --bin release -- keygen   # once: create the signing key
+cd builder && cargo run --bin release             # build, zip, sign, publish
 ```
 
-The build tool is a small Rust program (`builder/src/main.rs`) that replaced the
-old `build_app.sh`. It `cd`s to the project root (via `CARGO_MANIFEST_DIR`'s
-parent), runs `swift build -c release`, compiles `Helpers/mrhelper.c` →
+The build tool is a small Rust program: shared steps in `builder/src/lib.rs`,
+the public command in `builder/src/main.rs` (`default-run`). It `cd`s to the
+project root (via `CARGO_MANIFEST_DIR`'s parent), reads the version from
+`VERSION`, runs `swift build -c release`, compiles `Helpers/mrhelper.c` →
 `.build/mrhelper.dylib` (`clang -dynamiclib -framework CoreFoundation -O2`),
-ad-hoc signs the dylib, assembles the `.app` (binary → `Contents/MacOS/`, dylib →
-`Contents/Resources/` where `SystemNowPlaying.dylibPath` looks first, writes
-`Info.plist`), and ad-hoc signs the bundle (`codesign --force --deep --sign -`).
+signs the dylib, assembles the `.app` (binary → `Contents/MacOS/`, dylib →
+`Contents/Resources/` where `SystemNowPlaying.dylibPath` looks first), writes
+`Info.plist`, builds the icon, and signs the bundle (`codesign --force --deep`).
 It then interactively offers to `ditto` the app to `/Applications/` and to open
-it. Needs Rust ≥ 1.85 (Cargo edition 2024).
+it. Needs Rust ≥ 1.85 (Cargo edition 2024); its one dependency is
+`ed25519-dalek` (release signing).
+
+Environment knobs (set per run, or permanently in `.cargo/config.toml`'s `[env]`):
+- `DI_ICON` — `1`/`0` to always/never embed the custom icon instead of asking.
+  Releases always include it.
+- `DI_SIGN_IDENTITY` — code-signing identity; default `-` (ad-hoc). See §11.
+- `DI_SIGNING_KEY_PATH` — where the private update key lives; default
+  `~/.config/dynamic-island/update_signing_key`.
 
 Ad-hoc signing is *why* MediaRemote is blocked for the app itself — hence the
-python3 host workaround. `Info.plist` sets `LSUIElement` (agent app, no Dock icon)
-and `NSAppleEventsUsageDescription` (the Automation prompt for Spotify/Music).
+python3 host workaround. `Info.plist` sets `CFBundleShortVersionString` /
+`CFBundleVersion` from `VERSION`, `LSUIElement` (agent app, no Dock icon),
+`NSAppleEventsUsageDescription` (the Automation prompt for Spotify/Music), and —
+only when both are known — `DIUpdateRepo` (owner/repo parsed from the git
+`origin` remote) and `DIUpdatePublicKey` (from `Assets/update_public_key.txt`).
 
-## 11. Gotchas / lessons for an editor
+## 11. Auto-updates & releases
+
+A small self-built updater on top of **GitHub Releases** (no Sparkle, no deps).
+
+**Maintainer-only tool.** Releasing and key generation live in
+`builder/src/bin/release.rs`, which is **gitignored** — it exists only on the
+maintainer's machine (back it up together with the key). Clones build fine without
+it: Cargo just doesn't see a `release` binary. Hiding it is about tidiness, not
+security — the security is that only the maintainer holds the private key.
+
+**Trust model.** `cargo run --bin release -- keygen` creates an Ed25519 key pair: the private
+key goes to `~/.config/dynamic-island/update_signing_key` (mode 600, never in the
+repo — losing it means existing installs can't be updated); the public key goes to
+`Assets/update_public_key.txt`, is committed, and is baked into every build's
+Info.plist. The app installs a download **only** if its Ed25519 signature verifies
+against that baked-in key (CryptoKit `Curve25519.Signing`), so a compromised GitHub
+account or a tampered download can't push code. Rust (`ed25519-dalek`) signs and
+CryptoKit verifies — both are standard RFC 8032 Ed25519 (cross-tested).
+
+**Releasing.** Bump `VERSION`, commit + push, then `cargo run --bin release`. It
+refuses to run if the private key is missing or doesn't match the committed public
+key, builds (always with icon), zips with `ditto -c -k --keepParent` →
+`dist/DynamicIsland-<v>.zip`, writes the hex signature to `<zip>.sig`, then asks
+before running `gh release create v<v> <zip> <sig> --generate-notes`. `dist/` is
+gitignored. The tag is created from what's pushed, so push first.
+
+**In the app** (`Updater/`):
+- `Updater` reads `DIUpdateRepo` + `DIUpdatePublicKey`; if either is missing, or
+  the app isn't running from a `.app` bundle (`swift run`), it stays off. It checks
+  10 s after launch and every 24 h; "Se etter oppdateringer…" checks on demand.
+  Background checks are silent unless there's an update (and not one the user
+  chose to skip — stored in UserDefaults `DIUpdaterSkippedVersion`).
+- `ReleaseFeed` calls `GET /repos/<repo>/releases/latest` (drafts/prereleases are
+  excluded by GitHub), requires a `.zip` plus a matching `.zip.sig` over https,
+  and compares versions numerically (`1.10.0 > 1.9.2`, `1.0 == 1.0.0`).
+- `UpdateInstaller.prepare` downloads the sig + zip into a temp folder, verifies the
+  signature over the exact zip bytes, unpacks with `ditto -x -k`, checks the bundle
+  id matches and `codesign --verify --deep` passes, and strips quarantine. Nothing
+  outside the temp folder is touched before this succeeds.
+- `installAndRelaunch` refuses App-Translocated (run-from-Downloads) or unwritable
+  locations, then spawns a `/bin/sh` script that waits for our PID to exit, moves
+  the old bundle aside, `ditto`s the new one in (restoring the old one if that
+  fails), cleans up and `open`s the app — and quits.
+
+**Keeping permissions across updates.** macOS ties Automation (TCC) permissions to
+the code signature. Ad-hoc builds get a new identity every build, so users would be
+re-asked for Spotify/Music access after each update (`release` warns about this).
+Fix, no Apple account needed: in Keychain Access → Certificate Assistant → Create a
+Certificate…, name it e.g. "Dynamic Island Signing", Identity Type *Self Signed
+Root*, Certificate Type *Code Signing*; then set
+`DI_SIGN_IDENTITY = "Dynamic Island Signing"` in `builder/.cargo/config.toml`'s
+`[env]`. (This doesn't notarize — first launch still needs the Gatekeeper
+right-click → Open.)
+
+## 12. Gotchas / lessons for an editor
 
 - Don't gate the stream on `GetNowPlayingApplicationIsPlaying` — its callback can
   block delivery; derive `isPlaying` from `PlaybackRate` in `fillFrom`, and only
@@ -414,4 +494,8 @@ and `NSAppleEventsUsageDescription` (the Automation prompt for Spotify/Music).
 - The AppleScript reconcile (`appFetch`) is skipped entirely when idle
   (`sysInfo == nil && !hasMedia`); don't reintroduce unconditional per-tick
   AppleScript — it scripts Spotify/Music every second just because they're open.
+- Installed copies only accept updates signed by the key they were built with.
+  Don't regenerate or casually replace `Assets/update_public_key.txt`; to rotate
+  keys, ship one last release signed with the old key that carries the new public
+  key.
 ```

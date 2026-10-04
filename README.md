@@ -20,6 +20,8 @@ Ts vibecoeded as hell but free so who cares 🤑
 - **Playback control:** routed through `MediaRemote` (or AppleScript for Spotify/Music/browsers) so it always hits
   the app that's actually playing.
 - **Agent app:** no Dock icon, just a small icon in the menu bar.
+- **Auto-updates:** checks GitHub Releases on launch and once a day, and only installs builds signed with
+  the project's key. You can also hit **Se etter oppdateringer…** in the menu bar icon.
 
 Stays light on RAM (~45 MB) via a single long-lived helper process — no per-second spawning.
 

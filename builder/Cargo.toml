@@ -2,5 +2,10 @@
 name = "builder"
 version = "0.1.0"
 edition = "2024"
+# `cargo run` builds the app. The maintainer-only `release` tool (src/bin/,
+# gitignored) runs with `cargo run --bin release`.
+default-run = "builder"
 
 [dependencies]
+# Signs release zips; the app verifies them with CryptoKit (standard Ed25519).
+ed25519-dalek = "2"

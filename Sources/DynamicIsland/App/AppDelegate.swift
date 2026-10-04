@@ -3,6 +3,7 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let model = NowPlayingModel()
+    private let updater = Updater()
     private var controller: NotchController?
     private var statusItem: NSStatusItem?
 
@@ -11,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // before the app launches.
         controller = NotchController(model: model)
         model.start()
+        updater.start()
         setupStatusItem()
     }
 
@@ -27,7 +29,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
-        menu.addItem(withTitle: "Dynamic Island", action: nil, keyEquivalent: "")
+        menu.addItem(withTitle: "Dynamic Island \(updater.currentVersion)", action: nil, keyEquivalent: "")
+        menu.addItem(.separator())
+
+        let update = NSMenuItem(title: "Se etter oppdateringer…", action: #selector(checkForUpdates), keyEquivalent: "")
+        update.target = self
+        menu.addItem(update)
         menu.addItem(.separator())
 
         let quit = NSMenuItem(title: "Avslutt", action: #selector(quit), keyEquivalent: "q")
@@ -37,6 +44,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         item.menu = menu
         statusItem = item
     }
+
+    @objc private func checkForUpdates() { updater.check(userInitiated: true) }
 
     @objc private func quit() { NSApp.terminate(nil) }
 }
