@@ -32,12 +32,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Dynamic Island \(updater.currentVersion)", action: nil, keyEquivalent: "")
         menu.addItem(.separator())
 
-        let update = NSMenuItem(title: "Se etter oppdateringer…", action: #selector(checkForUpdates), keyEquivalent: "")
+        let update = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
         update.target = self
         menu.addItem(update)
         menu.addItem(.separator())
 
-        let quit = NSMenuItem(title: "Avslutt", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
 

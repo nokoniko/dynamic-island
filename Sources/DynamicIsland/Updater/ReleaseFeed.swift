@@ -74,17 +74,17 @@ enum UpdateError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .network:
-            return "Kunne ikke kontakte GitHub."
+            return "Couldn't reach GitHub."
         case .badSignature:
-            return "Oppdateringen hadde ikke en gyldig signatur, så den ble ikke installert."
+            return "The update didn't have a valid signature, so it wasn't installed."
         case .badArchive:
-            return "Oppdateringsfilen var ødelagt eller uventet."
+            return "The update file was damaged or not what was expected."
         case .translocated:
-            return "Flytt Dynamic Island til Programmer-mappen og prøv igjen."
+            return "Move Dynamic Island to your Applications folder and try again."
         case .notWritable(let path):
-            return "Har ikke skrivetilgang til \(path)."
+            return "Dynamic Island can't write to \(path)."
         case .installFailed:
-            return "Kunne ikke installere oppdateringen."
+            return "Couldn't install the update."
         }
     }
 }
