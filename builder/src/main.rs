@@ -5,8 +5,16 @@ use std::path::Path;
 /// `cargo run`: build DynamicIsland.app, then optionally install it to
 /// /Applications and open it.
 fn main() -> Res {
-	if std::env::args().nth(1).is_some() {
-		return Err("`cargo run` takes no arguments — it just builds DynamicIsland.app".into());
+	match std::env::args().nth(1).as_deref() {
+		None => {}
+		Some("release") | Some("keygen") => {
+			return Err("releasing moved to its own tool: `cargo run --bin release` \
+				(or `cargo run --bin release -- keygen`)"
+				.into());
+		}
+		Some(_) => {
+			return Err("`cargo run` takes no arguments — it just builds DynamicIsland.app".into());
+		}
 	}
 	enter_project_root()?;
 	build_app(false)?;
