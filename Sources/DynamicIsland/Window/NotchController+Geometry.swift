@@ -10,18 +10,34 @@ extension NotchController {
         return NSScreen.main
     }
 
+    /// The parts of a screen that decide the notch geometry.
+    struct ScreenGeometry {
+        var width: CGFloat
+        var topInset: CGFloat
+        var topLeftAreaWidth: CGFloat?
+        var topRightAreaWidth: CGFloat?
+    }
+
     static func metrics(for screen: NSScreen?) -> NotchMetrics {
-        guard let screen else {
+        metrics(geometry: screen.map {
+            ScreenGeometry(width: $0.frame.width,
+                           topInset: $0.safeAreaInsets.top,
+                           topLeftAreaWidth: $0.auxiliaryTopLeftArea?.width,
+                           topRightAreaWidth: $0.auxiliaryTopRightArea?.width)
+        })
+    }
+
+    nonisolated static func metrics(geometry: ScreenGeometry?) -> NotchMetrics {
+        guard let geometry else {
             return NotchMetrics(notchWidth: 200, notchHeight: 32, hasNotch: false)
         }
-        let topInset = screen.safeAreaInsets.top
 
-        if topInset > 0,
-           let left = screen.auxiliaryTopLeftArea,
-           let right = screen.auxiliaryTopRightArea {
-            let notchWidth = screen.frame.width - left.width - right.width
+        if geometry.topInset > 0,
+           let left = geometry.topLeftAreaWidth,
+           let right = geometry.topRightAreaWidth {
+            let notchWidth = geometry.width - left - right
             return NotchMetrics(notchWidth: max(notchWidth, 120),
-                                notchHeight: topInset,
+                                notchHeight: geometry.topInset,
                                 hasNotch: true)
         }
         // No notch: synthesize a floating pill.

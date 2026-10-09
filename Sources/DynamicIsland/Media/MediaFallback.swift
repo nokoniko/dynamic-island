@@ -63,10 +63,12 @@ enum MediaFallback {
         !NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).isEmpty
     }
 
+    private static let separator = "|||"
+
     private static func query(bundleID: String, app: String) -> NowPlayingInfo? {
         guard isRunning(bundleID) else { return nil }
 
-        let sep = "|||"
+        let sep = separator
         // Spotify exposes an artwork URL; Music does not, so only ask Spotify.
         let artLine = app == "Spotify"
             ? "set artURL to artwork url of current track"
@@ -93,9 +95,18 @@ enum MediaFallback {
         var error: NSDictionary?
         let result = script.executeAndReturnError(&error)
         if error != nil { return nil }
-        guard let raw = result.stringValue, raw != "STOPPED" else { return nil }
+        guard let raw = result.stringValue, var info = parseAppOutput(raw, app: app) else { return nil }
+        if let proc = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
+            info.pid = Int(proc.processIdentifier)
+        }
+        return info
+    }
 
-        let parts = raw.components(separatedBy: sep)
+    /// Parses the reply of the Spotify/Music script above.
+    static func parseAppOutput(_ raw: String, app: String) -> NowPlayingInfo? {
+        guard raw != "STOPPED" else { return nil }
+
+        let parts = raw.components(separatedBy: separator)
         guard parts.count >= 6 else { return nil }
 
         var info = NowPlayingInfo()
@@ -114,9 +125,6 @@ enum MediaFallback {
         info.isPlaying = parts[5].lowercased().contains("playing")
         if parts.count >= 7, !parts[6].isEmpty { info.artworkURL = parts[6] }
         info.sourceApp = app
-        if let proc = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
-            info.pid = Int(proc.processIdentifier)
-        }
         return info
     }
 
@@ -161,8 +169,12 @@ enum MediaFallback {
         var error: NSDictionary?
         let raw = script.executeAndReturnError(&error).stringValue ?? ""
         if error != nil { return nil }
+        return parseBrowserOutput(raw, browser: name)
+    }
 
-        let parts = raw.components(separatedBy: "|||")
+    /// Parses the reply of `mediaJS`.
+    static func parseBrowserOutput(_ raw: String, browser: String) -> NowPlayingInfo? {
+        let parts = raw.components(separatedBy: separator)
         guard parts.count >= 2 else { return nil }
         let playing = parts[0] == "1"
         let title = parts[1]
@@ -176,7 +188,7 @@ enum MediaFallback {
         if parts.count > 3, !parts[3].isEmpty { info.artworkURL = parts[3] }
         if parts.count > 4 { info.elapsed = Double(parts[4].replacingOccurrences(of: ",", with: ".")) }
         if parts.count > 5, let d = Double(parts[5].replacingOccurrences(of: ",", with: ".")), d.isFinite { info.duration = d }
-        info.sourceApp = name
+        info.sourceApp = browser
         return info
     }
 

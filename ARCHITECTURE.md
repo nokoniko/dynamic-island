@@ -59,6 +59,10 @@ builder/                           Rust build tool (`cargo run` builds the .app)
   src/main.rs                      `cargo run` — build, optionally install/open
   src/bin/release.rs               maintainer-only, GITIGNORED (not in the repo):
                                    keygen + build/zip/sign/publish a release
+Tests/DynamicIslandTests/          Swift Testing suite (+ Fixtures/rust-signed)
+test.sh                            runs `swift test` + `cargo test` (handles CLT-only)
+TESTING.md                         how to test + manual pre-release checklist
+.github/workflows/tests.yml        CI: both suites on macos-latest
 Assets/AppIcon.svg                 app icon source (rasterized at build time)
 Assets/update_public_key.txt       public Ed25519 key for updates (from keygen)
 Helpers/mrhelper.c                 C bridge to the private MediaRemote framework
@@ -495,6 +499,13 @@ right-click → Open.)
 - The AppleScript reconcile (`appFetch`) is skipped entirely when idle
   (`sysInfo == nil && !hasMedia`); don't reintroduce unconditional per-tick
   AppleScript — it scripts Spotify/Music every second just because they're open.
+- Testable logic lives in pure static functions (`reconcile`, `pauseLinger`,
+  `parse(line:)`, `parseAppOutput`, `metrics(geometry:)`,
+  `hasFullscreenMenuBarOverlay`, `popoutShown`, `isPlayerFrontmost`,
+  `UpdateInstaller.signature(fromSigFile:)` …); the code around them only fetches
+  system data. Keep new logic there and add a case to the tests. See TESTING.md —
+  and note plain `swift test` silently runs zero tests on a Command Line Tools-only
+  setup; use `./test.sh`.
 - Installed copies only accept updates signed by the key they were built with.
   Don't regenerate or casually replace `Assets/update_public_key.txt`; to rotate
   keys, ship one last release signed with the old key that carries the new public

@@ -37,7 +37,7 @@ cd builder
 cargo run
 ```
 
-Builds `DynamicIsland.app` and offers to move it to Applications. Needs Swift (Xcode Command Line Tools) and Rust. For quick iteration there's `swift run`, and if u r a lazy bum, `./build.sh`.
+Builds `DynamicIsland.app` and offers to move it to Applications. Needs Swift (Xcode Command Line Tools) and Rust. For quick iteration there's `swift run`, and if u r a lazy bum, `./build.sh`. Run the tests with `./test.sh` (see [TESTING.md](TESTING.md)).
 
 ## How it works
 

@@ -13,6 +13,17 @@ let package = Package(
             swiftSettings: [
                 .swiftLanguageMode(.v5)
             ]
+        ),
+        .testTarget(
+            name: "DynamicIslandTests",
+            dependencies: ["DynamicIsland"],
+            path: "Tests/DynamicIslandTests",
+            resources: [
+                .copy("Fixtures")
+            ],
+            swiftSettings: [
+                .swiftLanguageMode(.v5)
+            ]
         )
     ]
 )

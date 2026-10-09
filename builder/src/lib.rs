@@ -2,6 +2,7 @@
 //! builds the app) and the maintainer-only `release` tool, which lives in
 //! `src/bin/release.rs` and is kept out of git.
 
+use ed25519_dalek::{Signer, SigningKey};
 use std::error::Error;
 use std::fs;
 use std::io::{self, Write};
@@ -100,10 +101,19 @@ pub fn hex(bytes: &[u8]) -> String {
 	bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
+/// The hex Ed25519 signature written to a release's `.sig` file.
+pub fn sign_hex(key: &SigningKey, data: &[u8]) -> String {
+	hex(&key.sign(data).to_bytes())
+}
+
 /// The app version from VERSION, validated as dotted numbers (e.g. 1.2.0).
 fn read_version() -> Res<String> {
 	let raw = fs::read_to_string(VERSION_FILE)
 		.map_err(|_| format!("{VERSION_FILE} not found — create it containing e.g. 1.0.0"))?;
+	parse_version(&raw)
+}
+
+fn parse_version(raw: &str) -> Res<String> {
 	let version = raw.trim().to_string();
 	let valid = !version.is_empty()
 		&& version.split('.').all(|p| !p.is_empty() && p.chars().all(|c| c.is_ascii_digit()));
@@ -116,7 +126,11 @@ fn read_version() -> Res<String> {
 /// "owner/repo" from the git `origin` remote, so a fork updates from its own releases.
 pub fn github_repo() -> Option<String> {
 	let out = Command::new("git").args(["remote", "get-url", "origin"]).output().ok()?;
-	let url = String::from_utf8(out.stdout).ok()?.trim().to_string();
+	parse_github_remote(&String::from_utf8(out.stdout).ok()?)
+}
+
+fn parse_github_remote(url: &str) -> Option<String> {
+	let url = url.trim();
 	let rest = url
 		.strip_prefix("https://github.com/")
 		.or_else(|| url.strip_prefix("git@github.com:"))
@@ -259,4 +273,107 @@ pub fn build_app(release: bool) -> Res<String> {
 
 	println!("✓ Built {APP} v{version}");
 	Ok(version)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use std::path::PathBuf;
+	use std::sync::atomic::{AtomicUsize, Ordering};
+
+	// Throwaway key that only signs the test fixture — never a release key.
+	const FIXTURE_SEED: [u8; 32] = [7; 32];
+
+	fn fixture(name: &str) -> PathBuf {
+		Path::new(env!("CARGO_MANIFEST_DIR"))
+			.join("../Tests/DynamicIslandTests/Fixtures/rust-signed")
+			.join(name)
+	}
+
+	#[test]
+	fn signature_fixture_comes_from_the_builders_signing() {
+		let key = SigningKey::from_bytes(&FIXTURE_SEED);
+		let zip = fs::read(fixture("update.zip")).unwrap();
+		let signature = fs::read_to_string(fixture("update.zip.sig")).unwrap();
+		let public = fs::read_to_string(fixture("public_key.txt")).unwrap();
+		assert_eq!(signature.trim(), sign_hex(&key, &zip));
+		assert_eq!(public.trim(), hex(key.verifying_key().as_bytes()));
+	}
+
+	#[test]
+	fn reads_a_dotted_version() {
+		for (raw, expected) in [("1.0.0\n", "1.0.0"), ("  2.10.3  ", "2.10.3"), ("7", "7"), ("10.0", "10.0")] {
+			assert_eq!(parse_version(raw).unwrap(), expected, "{raw:?}");
+		}
+	}
+
+	#[test]
+	fn rejects_versions_that_are_not_dotted_numbers() {
+		for raw in ["", "\n", "1..0", ".1", "1.", "v1.0.0", "1.0.0-beta", "1.0 .0", "1,0"] {
+			assert!(parse_version(raw).is_err(), "{raw:?} should be rejected");
+		}
+	}
+
+	#[test]
+	fn parses_github_remotes() {
+		let cases = [
+			("https://github.com/nokoniko/dynamic-island.git\n", Some("nokoniko/dynamic-island")),
+			("https://github.com/nokoniko/dynamic-island", Some("nokoniko/dynamic-island")),
+			("https://github.com/nokoniko/dynamic-island/", Some("nokoniko/dynamic-island")),
+			("https://github.com/nokoniko/dynamic-island.git/", Some("nokoniko/dynamic-island")),
+			("git@github.com:nokoniko/dynamic-island.git", Some("nokoniko/dynamic-island")),
+			("ssh://git@github.com/nokoniko/dynamic-island.git", Some("nokoniko/dynamic-island")),
+			("https://gitlab.com/nokoniko/dynamic-island.git", None),
+			("https://github.com/nokoniko", None),
+			("https://github.com/nokoniko/dynamic-island/tree/main", None),
+			("", None),
+		];
+		for (url, expected) in cases {
+			assert_eq!(parse_github_remote(url).as_deref(), expected, "{url:?}");
+		}
+	}
+
+	fn plist_value(plist: &str, key: &str) -> Option<String> {
+		static NEXT: AtomicUsize = AtomicUsize::new(0);
+		let n = NEXT.fetch_add(1, Ordering::Relaxed);
+		let path = std::env::temp_dir().join(format!("di-plist-{}-{n}.plist", std::process::id()));
+		fs::write(&path, plist).unwrap();
+		let lint = Command::new("plutil").args(["-lint", "-s"]).arg(&path).status().unwrap();
+		assert!(lint.success(), "generated Info.plist is not a valid plist");
+		let out = Command::new("plutil").args(["-extract", key, "raw", "-o", "-"]).arg(&path).output().unwrap();
+		fs::remove_file(&path).ok();
+		out.status.success().then(|| String::from_utf8(out.stdout).unwrap().trim().to_string())
+	}
+
+	#[test]
+	fn info_plist_carries_the_version_and_update_keys() {
+		let key = "ab".repeat(32);
+		let plist = info_plist("1.4.2", Some("owner/repo"), Some(&key));
+		assert_eq!(plist_value(&plist, "CFBundleShortVersionString").as_deref(), Some("1.4.2"));
+		assert_eq!(plist_value(&plist, "CFBundleVersion").as_deref(), Some("1.4.2"));
+		assert_eq!(plist_value(&plist, "DIUpdateRepo").as_deref(), Some("owner/repo"));
+		assert_eq!(plist_value(&plist, "DIUpdatePublicKey").as_deref(), Some(key.as_str()));
+		assert_eq!(plist_value(&plist, "CFBundleIdentifier").as_deref(), Some("com.niko.dynamicisland"));
+		assert_eq!(plist_value(&plist, "LSUIElement").as_deref(), Some("true"));
+	}
+
+	#[test]
+	fn info_plist_leaves_the_updater_off_unless_both_keys_are_known() {
+		let key = "ab".repeat(32);
+		for (repo, public_key) in [(Some("owner/repo"), None), (None, Some(key.as_str())), (None, None)] {
+			let plist = info_plist("1.0.0", repo, public_key);
+			assert_eq!(plist_value(&plist, "DIUpdateRepo"), None);
+			assert_eq!(plist_value(&plist, "DIUpdatePublicKey"), None);
+			assert_eq!(plist_value(&plist, "CFBundleShortVersionString").as_deref(), Some("1.0.0"));
+		}
+	}
+
+	#[test]
+	#[ignore = "rewrites the fixture; run after replacing update.zip"]
+	fn regenerate_signature_fixture() {
+		let key = SigningKey::from_bytes(&FIXTURE_SEED);
+		let zip = fs::read(fixture("update.zip")).unwrap();
+		fs::write(fixture("update.zip.sig"), format!("{}\n", sign_hex(&key, &zip))).unwrap();
+		fs::write(fixture("public_key.txt"), format!("{}\n", hex(key.verifying_key().as_bytes()))).unwrap();
+	}
 }

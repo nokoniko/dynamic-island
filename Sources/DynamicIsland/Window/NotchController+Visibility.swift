@@ -57,13 +57,6 @@ extension NotchController {
     }
 
     /// True when an app is in fullscreen on the notched screen.
-    ///
-    /// A fullscreen app gets its **own** auto-hiding menu-bar overlay above the
-    /// system one (a full-width, menu-bar-height window at the very top, owned by
-    /// the app, at a level above the normal menu bar). That overlay exists only in
-    /// fullscreen, so its presence is a reliable signal — unlike the system menu
-    /// bar, which stays put, and window size, which can't tell fullscreen-below-the
-    /// -notch from a maximized window apart.
     private func isNotchScreenFullscreen() -> Bool {
         guard let screen = Self.targetScreen() else { return false }
         let sw = screen.frame.width
@@ -71,8 +64,19 @@ extension NotchController {
         guard let list = CGWindowListCopyWindowInfo(
             [.optionOnScreenOnly], kCGNullWindowID
         ) as? [[String: Any]] else { return false }
+        return Self.hasFullscreenMenuBarOverlay(in: list, screenWidth: sw, menuBarLevel: menuLevel)
+    }
 
-        for window in list {
+    /// A fullscreen app gets its **own** auto-hiding menu-bar overlay above the
+    /// system one (a full-width, menu-bar-height window at the very top, owned by
+    /// the app, at a level above the normal menu bar). That overlay exists only in
+    /// fullscreen, so its presence is a reliable signal — unlike the system menu
+    /// bar, which stays put, and window size, which can't tell fullscreen-below-the
+    /// -notch from a maximized window apart.
+    nonisolated static func hasFullscreenMenuBarOverlay(in windows: [[String: Any]],
+                                                        screenWidth sw: CGFloat,
+                                                        menuBarLevel menuLevel: Int) -> Bool {
+        for window in windows {
             let owner = window[kCGWindowOwnerName as String] as? String ?? ""
             // Skip the system chrome and our own window.
             if owner == "Window Server" || owner == "Dock" || owner == "DynamicIsland" { continue }

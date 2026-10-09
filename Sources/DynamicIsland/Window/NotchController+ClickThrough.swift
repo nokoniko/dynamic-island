@@ -31,8 +31,16 @@ extension NotchController {
 
     /// Whether the clickable pop-out is currently on screen.
     private var popoutShown: Bool {
+        Self.popoutShown(hiddenForFullscreen: hiddenForFullscreen,
+                         suppressedForFrontmost: state.suppressedForFrontmost,
+                         isPlaying: model.isPlaying,
+                         pausedLingering: model.pausedLingering)
+    }
+
+    nonisolated static func popoutShown(hiddenForFullscreen: Bool, suppressedForFrontmost: Bool,
+                                        isPlaying: Bool, pausedLingering: Bool) -> Bool {
         guard !hiddenForFullscreen else { return false }
-        guard !state.suppressedForFrontmost else { return false }
-        return model.isPlaying || model.pausedLingering
+        guard !suppressedForFrontmost else { return false }
+        return isPlaying || pausedLingering
     }
 }

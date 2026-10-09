@@ -170,8 +170,8 @@ final class NowPlayingModel: ObservableObject {
         }
     }
 
-    nonisolated private static func reconcile(system: NowPlayingInfo?,
-                                              app: NowPlayingInfo?) -> NowPlayingInfo? {
+    nonisolated static func reconcile(system: NowPlayingInfo?,
+                                      app: NowPlayingInfo?) -> NowPlayingInfo? {
         guard let app else { return system }           // only the system source (e.g. a browser)
         if let sys = system, sameTrack(sys, app) {
             return app                                 // same track → app state is authoritative + instant
@@ -182,12 +182,28 @@ final class NowPlayingModel: ObservableObject {
         return system ?? app
     }
 
-    nonisolated private static func sameTrack(_ a: NowPlayingInfo, _ b: NowPlayingInfo) -> Bool {
+    nonisolated static func sameTrack(_ a: NowPlayingInfo, _ b: NowPlayingInfo) -> Bool {
         func norm(_ s: String?) -> String {
             (s ?? "").trimmingCharacters(in: .whitespaces).lowercased()
         }
         let ta = norm(a.title)
         return !ta.isEmpty && ta == norm(b.title)
+    }
+
+    enum PauseLinger { case start, cancel, unchanged }
+
+    /// Linger briefly when playback pauses — but only for real app players
+    /// (Spotify/Music), where pausing means "I'll resume". For browser/system
+    /// sources, going not-playing usually means you left the video (closed the
+    /// tab, navigated away), and MediaRemote reports that as a stale "paused"
+    /// frame — so hide right away instead of lingering on it. Resuming, or a
+    /// non-lingering source stopping, drops any linger.
+    nonisolated static func pauseLinger(wasPlaying: Bool, isPlaying: Bool,
+                                        title: String, source: String?) -> PauseLinger {
+        let lingers = source == "Spotify" || source == "Music"
+        if wasPlaying && !isPlaying && !title.isEmpty && lingers { return .start }
+        if isPlaying || (wasPlaying && !isPlaying) { return .cancel }
+        return .unchanged
     }
 
     private func apply(_ info: NowPlayingInfo) {
@@ -212,17 +228,11 @@ final class NowPlayingModel: ObservableObject {
         if let p = info.isPlaying { isPlaying = p }
         lastUpdate = Date()
 
-        // Linger briefly when playback pauses — but only for real app players
-        // (Spotify/Music), where pausing means "I'll resume". For browser/system
-        // sources, going not-playing usually means you left the video (closed the
-        // tab, navigated away), and MediaRemote reports that as a stale "paused"
-        // frame — so hide right away instead of lingering on it.
-        let pauseLingers = info.sourceApp == "Spotify" || info.sourceApp == "Music"
-        if wasPlaying && !isPlaying && !newTitle.isEmpty && pauseLingers {
-            startPauseLinger()
-        } else if isPlaying || (wasPlaying && !isPlaying) {
-            // Resumed, or a non-lingering source stopped → drop any linger now.
-            cancelPauseLinger()
+        switch Self.pauseLinger(wasPlaying: wasPlaying, isPlaying: isPlaying,
+                                title: newTitle, source: info.sourceApp) {
+        case .start: startPauseLinger()
+        case .cancel: cancelPauseLinger()
+        case .unchanged: break
         }
 
         if let art = info.artwork {

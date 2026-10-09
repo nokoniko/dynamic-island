@@ -1,0 +1,19 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift tests
+        run: swift test
+
+      - name: Builder tests
+        working-directory: builder
+        run: cargo test

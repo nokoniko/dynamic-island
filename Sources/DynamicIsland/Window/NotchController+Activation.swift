@@ -32,12 +32,26 @@ extension NotchController {
     /// True when the app that owns the current track is already the frontmost app —
     /// then there's no point showing the island (including during the pause linger).
     private func isPlayerFrontmost() -> Bool {
-        guard model.hasMedia, let pid = model.playingPID,
-              let front = NSWorkspace.shared.frontmostApplication else { return false }
-        if Int(front.processIdentifier) == pid { return true }
+        Self.isPlayerFrontmost(
+            hasMedia: model.hasMedia,
+            playingPID: model.playingPID,
+            frontmost: {
+                NSWorkspace.shared.frontmostApplication.map {
+                    (pid: Int($0.processIdentifier), bundleID: $0.bundleIdentifier)
+                }
+            },
+            bundleID: { NSRunningApplication(processIdentifier: pid_t($0))?.bundleIdentifier }
+        )
+    }
+
+    /// The system lookups are closures so they only run when needed, as before.
+    nonisolated static func isPlayerFrontmost(hasMedia: Bool, playingPID: Int?,
+                                              frontmost: () -> (pid: Int, bundleID: String?)?,
+                                              bundleID: (Int) -> String?) -> Bool {
+        guard hasMedia, let pid = playingPID, let front = frontmost() else { return false }
+        if front.pid == pid { return true }
         // Browsers register now-playing from a helper process — match the app family.
-        if let playing = NSRunningApplication(processIdentifier: pid_t(pid)),
-           let pb = playing.bundleIdentifier, let fb = front.bundleIdentifier {
+        if let pb = bundleID(pid), let fb = front.bundleID {
             return pb == fb || pb.hasPrefix(fb) || fb.hasPrefix(pb)
         }
         return false

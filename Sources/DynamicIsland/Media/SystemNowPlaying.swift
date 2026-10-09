@@ -118,7 +118,12 @@ final class SystemNowPlaying {
         return String(data: data, encoding: .utf8)
     }
 
-    private static func parse(_ data: Data) -> NowPlayingInfo? {
+    /// One JSON line from the stream helper, or nil if it's malformed or nothing is playing.
+    static func parse(line: String) -> NowPlayingInfo? {
+        parse(Data(line.utf8))
+    }
+
+    static func parse(_ data: Data) -> NowPlayingInfo? {
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let title = obj["title"] as? String, !title.isEmpty
         else { return nil }

@@ -9,14 +9,10 @@ enum UpdateInstaller {
     /// Download, verify and unpack. Returns the verified new `.app` and the temp
     /// folder it lives in (cleaned up by the swap script after install).
     static func prepare(_ release: ReleaseInfo, publicKeyHex: String) async throws -> (app: URL, workDir: URL) {
-        guard let keyBytes = Data(hex: publicKeyHex),
-              let publicKey = try? Curve25519.Signing.PublicKey(rawRepresentation: keyBytes)
-        else { throw UpdateError.badSignature }
+        guard let publicKey = publicKey(fromHex: publicKeyHex) else { throw UpdateError.badSignature }
 
         let (sigData, _) = try await URLSession.shared.data(from: release.signatureURL)
-        guard let sigHex = String(data: sigData, encoding: .utf8),
-              let signature = Data(hex: sigHex.trimmingCharacters(in: .whitespacesAndNewlines))
-        else { throw UpdateError.badSignature }
+        guard let signature = signature(fromSigFile: sigData) else { throw UpdateError.badSignature }
 
         let fm = FileManager.default
         let work = fm.temporaryDirectory.appendingPathComponent("DynamicIslandUpdate-\(UUID().uuidString)")
@@ -28,7 +24,7 @@ enum UpdateInstaller {
 
             // The signature covers the exact zip bytes we're about to unpack.
             let zipData = try Data(contentsOf: zip, options: .mappedIfSafe)
-            guard publicKey.isValidSignature(signature, for: zipData) else { throw UpdateError.badSignature }
+            guard isAuthentic(zipData, signature: signature, publicKey: publicKey) else { throw UpdateError.badSignature }
 
             let unpacked = work.appendingPathComponent("unpacked")
             guard run("/usr/bin/ditto", ["-x", "-k", zip.path, unpacked.path]) else { throw UpdateError.badArchive }
@@ -77,6 +73,21 @@ enum UpdateInstaller {
                           target.path, newApp.path, workDir.path]
         do { try swap.run() } catch { throw UpdateError.installFailed }
         NSApp.terminate(nil)
+    }
+
+    static func publicKey(fromHex hex: String) -> Curve25519.Signing.PublicKey? {
+        guard let bytes = Data(hex: hex) else { return nil }
+        return try? Curve25519.Signing.PublicKey(rawRepresentation: bytes)
+    }
+
+    /// A release's `.sig` file: the hex signature, optionally followed by whitespace.
+    static func signature(fromSigFile data: Data) -> Data? {
+        guard let text = String(data: data, encoding: .utf8) else { return nil }
+        return Data(hex: text.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    static func isAuthentic(_ data: Data, signature: Data, publicKey: Curve25519.Signing.PublicKey) -> Bool {
+        publicKey.isValidSignature(signature, for: data)
     }
 
     @discardableResult
