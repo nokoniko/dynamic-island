@@ -459,8 +459,11 @@ CryptoKit verifies — both are standard RFC 8032 Ed25519 (cross-tested).
 **Releasing.** Bump `VERSION`, commit + push, then `cargo run --bin release`. It
 refuses to run if the private key is missing or doesn't match the committed public
 key, builds (always with icon), zips with `ditto -c -k --keepParent` →
-`dist/DynamicIsland-<v>.zip`, writes the hex signature to `<zip>.sig`, then asks
-before running `gh release create v<v> <zip> <sig> --generate-notes`. `dist/` is
+`dist/DynamicIsland-<v>.zip`, writes the hex signature to `<zip>.sig`, makes a
+drag-to-install `dist/DynamicIsland-<v>.dmg` (app + `/Applications` symlink,
+`hdiutil create -format UDZO`, codesigned when `DI_SIGN_IDENTITY` is set), then asks
+before running `gh release create v<v> <zip> <sig> <dmg> --generate-notes`. The dmg
+is only for first installs — the updater picks the `.zip` asset and ignores it. `dist/` is
 gitignored. The tag is created from what's pushed, so push first.
 
 **In the app** (`Updater/`):
