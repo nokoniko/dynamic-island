@@ -30,6 +30,7 @@ CI runs both suites on `macos-latest` for every push to `main` and every pull re
 | Rust ↔ CryptoKit | `RustSignedFixtureTests` + `signature_fixture_comes_from_the_builders_signing` | A zip signed by the builder's `sign_hex` verifies in CryptoKit, and fails once tampered |
 | Media flow | `ReconcileTests`, `PauseLingerTests` | The three reconcile rules, `sameTrack`, and which sources linger on pause |
 | Parsing | `StreamLineParsingTests`, `AppleScriptParsingTests`, `BrowserScriptParsingTests` | Broken lines, missing fields, Spotify ms vs Music seconds, comma decimals, live-stream durations |
+| Settings | `UpdateScheduleTests`, `SettingsSearchTests`, `PreferencesTests` | Next update check per frequency/time of day (missed and late checks, clock changes); search by title, keyword and pane name; defaults |
 | Window | `NotchGeometryTests`, `FullscreenDetectionTests`, `PopoutTests`, `FrontmostTests` | Notch metrics with/without a notch, fullscreen overlay detection on fake window lists, pop-out visibility, frontmost matching |
 | Builder | `cargo test` in `builder/` | `VERSION` parsing, generated `Info.plist` (validated with `plutil`), GitHub remote parsing |
 
@@ -78,6 +79,17 @@ Run through this before a release. These depend on the live system and can't run
 - [ ] Spotify/Music access is **not** asked for again (requires a stable `DI_SIGN_IDENTITY`).
 - [ ] **Skip This Version** stops the background prompt for that version; **Later** asks again next check.
 - [ ] Running from Downloads (translocated) shows the "Move Dynamic Island to your Applications folder" message.
+
+**Settings**
+- [ ] Menu bar icon → **Settings…** opens the window centered on the screen you're on and in front of other apps (even with another app active); opening it again reuses the window without moving it.
+- [ ] While it's open the app is in the Dock and ⌘Tab; ⌘W closes it and the Dock icon goes away.
+- [ ] ⌘Q in settings asks "Quit Dynamic Island?"; **Cancel** keeps everything running, **Quit** quits. Quit from the menu bar icon quits without asking.
+- [ ] **Launch at login** survives a log out/in (or asks to be allowed in Login Items).
+- [ ] Each toggle takes effect without a restart: hiding while the player is in front, the cover flip, the charging animation, the lock icon.
+- [ ] **Show in fullscreen apps** (off by default): off hides the island in fullscreen; on keeps it showing there.
+- [ ] With automatic updates off, no update prompt appears on launch; **Check Now** still works (spinner while checking).
+- [ ] General shows the version; after a check, "Last checked" and "Next" match the chosen frequency and time of day. **Time of day** is greyed out for **Every hour**.
+- [ ] Search: "lock" leaves only Dynamic Island with the lock row, "update" only General, nonsense shows "No Results"; clearing it brings everything back.
 
 **Memory**
 - [ ] `footprint -t $(pgrep -f DynamicIsland.app/Contents/MacOS) | grep phys_footprint` is about 27–30 MB idle.
