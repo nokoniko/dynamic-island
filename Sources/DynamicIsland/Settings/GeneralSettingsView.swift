@@ -97,9 +97,17 @@ struct GeneralSettingsView: View {
 
     private var about: some View {
         HStack(spacing: 14) {
-            Image(nsImage: NSApp.applicationIconImage)
-                .resizable()
-                .frame(width: 56, height: 56)
+            // The icon's artwork without the Dock backdrop, written by the builder.
+            if let artwork = Bundle.main.image(forResource: "IconArtwork") {
+                Image(nsImage: artwork)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 56)
+            } else {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .frame(width: 56, height: 56)
+            }
             VStack(alignment: .leading, spacing: 3) {
                 Text("Dynamic Island")
                     .font(.title3.weight(.semibold))
