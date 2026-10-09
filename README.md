@@ -11,7 +11,7 @@
 
 ## Install
 
-1. Download `DynamicIsland-x.y.z.dmg` from the [latest release](https://github.com/nokoniko/dynamic-island/releases/latest) and open it.
+1. Download `DynamicIsland-x.y.z.dmg` from the [latest release](https://github.com/nokoniko/hevel/releases/latest) and open it.
 2. Drag `DynamicIsland.app` onto **Applications**.
 3. First launch: right-click → **Open** (it isn't notarized, so macOS asks once).
 
