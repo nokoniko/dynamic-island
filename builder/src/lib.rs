@@ -167,14 +167,72 @@ fn want_icon() -> bool {
 	}
 }
 
-fn build_icon(resources_dir: &str) -> Res {
-	let svg = "Assets/AppIcon.svg";
-	if !Path::new(svg).exists() {
-		eprintln!("⚠︎ {svg} not found; skipping app icon");
-		return Ok(());
+/// Renders the icon source (SVG or PNG) with AppKit — which keeps transparency, unlike
+/// `qlmanage`, whose thumbnails always get a white background — trims the empty
+/// margin around the artwork, and centers it on a dark squircle in Apple's icon grid
+/// (824 px body, continuous corners, on a 1024 px canvas). macOS 26 puts any icon that
+/// doesn't fill that shape on a grey tile, so the artwork can't float on transparency.
+const RASTERIZE_ICON: &str = r#"
+import AppKit
+import SwiftUI
+let args = CommandLine.arguments
+guard let image = NSImage(contentsOf: URL(fileURLWithPath: args[1])), image.size.width > 0 else { exit(1) }
+func canvas(_ w: Int, _ h: Int) -> NSBitmapImageRep {
+	NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: w, pixelsHigh: h, bitsPerSample: 8, samplesPerPixel: 4,
+	                 hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+}
+func draw(into rep: NSBitmapImageRep, _ body: () -> Void) {
+	NSGraphicsContext.saveGraphicsState()
+	NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+	NSGraphicsContext.current?.imageInterpolation = .high
+	body()
+	NSGraphicsContext.restoreGraphicsState()
+}
+let scale = 2048 / max(image.size.width, image.size.height)
+let w = Int(image.size.width * scale), h = Int(image.size.height * scale)
+let full = canvas(w, h)
+draw(into: full) { image.draw(in: NSRect(x: 0, y: 0, width: w, height: h)) }
+let data = full.bitmapData!, row = full.bytesPerRow
+var minX = w, minY = h, maxX = -1, maxY = -1
+for y in 0..<h {
+	for x in 0..<w where data[y * row + x * 4 + 3] > 2 {
+		minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y)
 	}
+}
+guard maxX >= minX else { exit(1) }
+let cw = CGFloat(maxX - minX + 1), ch = CGFloat(maxY - minY + 1)
+let fit = 690 / max(cw, ch)
+let out = canvas(1024, 1024)
+// Bitmap rows run top-down, drawing coordinates bottom-up.
+let src = NSRect(x: CGFloat(minX), y: CGFloat(h - 1 - maxY), width: cw, height: ch)
+let dst = NSRect(x: (1024 - cw * fit) / 2, y: (1024 - ch * fit) / 2, width: cw * fit, height: ch * fit)
+draw(into: out) {
+	let cg = NSGraphicsContext.current!.cgContext
+	let body = CGRect(x: 100, y: 100, width: 824, height: 824)
+	cg.saveGState()
+	cg.addPath(RoundedRectangle(cornerRadius: 185.4, style: .continuous).path(in: body).cgPath)
+	cg.clip()
+	let colors = [CGColor(red: 0.13, green: 0.15, blue: 0.30, alpha: 1), CGColor(red: 0.02, green: 0.02, blue: 0.06, alpha: 1)]
+	let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: [0, 1])!
+	cg.drawLinearGradient(gradient, start: CGPoint(x: 512, y: 924), end: CGPoint(x: 512, y: 100), options: [])
+	cg.restoreGState()
+	full.draw(in: dst, from: src, operation: .sourceOver, fraction: 1, respectFlipped: false, hints: nil)
+}
+try! out.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: args[2]))
+"#;
 
-	println!("▶︎ Building app icon…");
+/// The app icon comes from `Assets/AppIcon.svg`, or `Assets/AppIcon.png` if there's no
+/// SVG: the artwork alone, any shape — the backdrop is added here; see `RASTERIZE_ICON`.
+fn build_icon(resources_dir: &str) -> Res {
+	let Some(source) = ["Assets/AppIcon.svg", "Assets/AppIcon.png"]
+		.into_iter()
+		.find(|p| Path::new(p).exists())
+	else {
+		eprintln!("⚠︎ no Assets/AppIcon.svg or Assets/AppIcon.png; skipping app icon");
+		return Ok(());
+	};
+
+	println!("▶︎ Building app icon from {source}…");
 	let work = ".build/iconwork";
 	let iconset = ".build/AppIcon.iconset";
 	let _ = fs::remove_dir_all(work);
@@ -182,10 +240,12 @@ fn build_icon(resources_dir: &str) -> Res {
 	fs::create_dir_all(work)?;
 	fs::create_dir_all(iconset)?;
 
-	run_quiet("qlmanage", &["-t", "-s", "1024", "-o", work, svg]);
-	let master = format!("{work}/AppIcon.svg.png");
+	let script = format!("{work}/rasterize.swift");
+	let master = format!("{work}/master.png");
+	fs::write(&script, RASTERIZE_ICON)?;
+	run_quiet("swift", &[&script, source, &master]);
 	if !Path::new(&master).exists() {
-		eprintln!("⚠︎ could not rasterize {svg}; skipping app icon");
+		eprintln!("⚠︎ could not rasterize {source}; skipping app icon");
 		return Ok(());
 	}
 
