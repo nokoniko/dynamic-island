@@ -119,14 +119,14 @@ final class Updater: ObservableObject {
             try UpdateInstaller.installAndRelaunch(newApp: pending.app, workDir: pending.workDir)
         } catch {
             self.pending = nil
-            inform("Dynamic Island \(pending.version) couldn't be installed: \(error.localizedDescription)")
+            inform("Hevel \(pending.version) couldn't be installed: \(error.localizedDescription)")
         }
     }
 
     /// Returns true if the user wants to install now.
     private func askToInstall(_ release: ReleaseInfo) -> Bool {
         let alert = NSAlert()
-        alert.messageText = "Dynamic Island \(release.version) is available"
+        alert.messageText = "Hevel \(release.version) is available"
         alert.informativeText = "You have \(currentVersion). Update now? The app will restart."
         alert.addButton(withTitle: "Update")
         alert.addButton(withTitle: "Later")
@@ -145,7 +145,7 @@ final class Updater: ObservableObject {
 
     private func inform(_ text: String) {
         let alert = NSAlert()
-        alert.messageText = "Dynamic Island"
+        alert.messageText = "Hevel"
         alert.informativeText = text
         NSApp.activate()
         alert.runModal()

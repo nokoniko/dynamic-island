@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import DynamicIsland
+@testable import Hevel
 
 struct UpdateScheduleTests {
 	let calendar: Calendar = {

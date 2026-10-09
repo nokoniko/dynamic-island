@@ -2,22 +2,22 @@
 import PackageDescription
 
 let package = Package(
-    name: "DynamicIsland",
+    name: "Hevel",
     platforms: [
         .macOS(.v14)
     ],
     targets: [
         .executableTarget(
-            name: "DynamicIsland",
-            path: "Sources/DynamicIsland",
+            name: "Hevel",
+            path: "Sources/Hevel",
             swiftSettings: [
                 .swiftLanguageMode(.v5)
             ]
         ),
         .testTarget(
-            name: "DynamicIslandTests",
-            dependencies: ["DynamicIsland"],
-            path: "Tests/DynamicIslandTests",
+            name: "HevelTests",
+            dependencies: ["Hevel"],
+            path: "Tests/HevelTests",
             resources: [
                 .copy("Fixtures")
             ],

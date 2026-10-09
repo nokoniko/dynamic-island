@@ -35,7 +35,7 @@ struct SettingsView: View {
                 switch selection ?? .general {
                 case .general:
                     GeneralSettingsView(updater: updater, shown: matches)
-                case .dynamicIsland:
+                case .island:
                     IslandSettingsView(shown: matches)
                 }
             }

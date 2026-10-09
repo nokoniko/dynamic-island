@@ -35,12 +35,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
             button.image = NSImage(systemSymbolName: "capsule.fill",
-                                   accessibilityDescription: "Dynamic Island")
+                                   accessibilityDescription: "Hevel")
             button.image?.isTemplate = true
         }
 
         let menu = NSMenu()
-        menu.addItem(withTitle: "Dynamic Island \(updater.currentVersion)", action: nil, keyEquivalent: "")
+        menu.addItem(withTitle: "Hevel \(updater.currentVersion)", action: nil, keyEquivalent: "")
         menu.addItem(.separator())
 
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
@@ -68,7 +68,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsItem.target = self
         appMenu.addItem(settingsItem)
         appMenu.addItem(.separator())
-        let quitItem = NSMenuItem(title: "Quit Dynamic Island", action: #selector(confirmQuit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "Quit Hevel", action: #selector(confirmQuit), keyEquivalent: "q")
         quitItem.target = self
         appMenu.addItem(quitItem)
 

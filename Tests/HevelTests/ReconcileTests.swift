@@ -1,5 +1,5 @@
 import Testing
-@testable import DynamicIsland
+@testable import Hevel
 
 struct ReconcileTests {
 	private func track(_ title: String?, playing: Bool?, from source: String) -> NowPlayingInfo {

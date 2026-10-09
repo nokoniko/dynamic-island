@@ -1,18 +1,18 @@
 <p align="center">
-  <img src="Assets/AppIcon.svg" width="320" alt="Dynamic Island icon">
+  <img src="Assets/AppIcon.svg" width="320" alt="Hevel icon">
 </p>
 
-<h1 align="center">Dynamic Island for Mac</h1>
+<h1 align="center">Hevel</h1>
 
 <p align="center">
-  A Dynamic Island for your MacBook's notch.<br>
+  Hevel - A Dynamic Island for your MacBook's notch.<br>
   Ts vibecoeded as hell but free so who cares 🤑
 </p>
 
 ## Install
 
-1. Download `DynamicIsland-x.y.z.dmg` from the [latest release](https://github.com/nokoniko/hevel/releases/latest) and open it.
-2. Drag `DynamicIsland.app` onto **Applications**.
+1. Download `Hevel-x.y.z.dmg` from the [latest release](https://github.com/nokoniko/hevel/releases/latest) and open it.
+2. Drag `Hevel.app` onto **Applications**.
 3. First launch: right-click → **Open** (it isn't notarized, so macOS asks once).
 
 After that it updates itself. Needs macOS 14+, an Apple Silicon Mac, and the Xcode Command Line Tools (`xcode-select --install`).
@@ -38,7 +38,7 @@ cd builder
 cargo run
 ```
 
-Builds `DynamicIsland.app` and offers to move it to Applications. Needs Swift (Xcode Command Line Tools) and Rust. For quick iteration there's `swift run`, and if u r a lazy bum, `./build.sh`. Run the tests with `./test.sh` (see [TESTING.md](TESTING.md)).
+Builds `Hevel.app` and offers to move it to Applications. Needs Swift (Xcode Command Line Tools) and Rust. For quick iteration there's `swift run`, and if u r a lazy bum, `./build.sh`. Run the tests with `./test.sh` (see [TESTING.md](TESTING.md)).
 
 ## How it works
 

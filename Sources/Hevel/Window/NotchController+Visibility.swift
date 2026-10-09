@@ -87,7 +87,7 @@ extension NotchController {
         for window in windows {
             let owner = window[kCGWindowOwnerName as String] as? String ?? ""
             // Skip the system chrome and our own window.
-            if owner == "Window Server" || owner == "Dock" || owner == "DynamicIsland" { continue }
+            if owner == "Window Server" || owner == "Dock" || owner == "Hevel" { continue }
             let layer = (window[kCGWindowLayer as String] as? Int) ?? 0
             guard layer >= menuLevel else { continue }   // at/above the menu-bar level
             guard let boundsDict = window[kCGWindowBounds as String] as? [String: Any],

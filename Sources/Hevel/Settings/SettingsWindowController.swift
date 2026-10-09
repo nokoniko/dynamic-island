@@ -67,7 +67,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     func confirmQuit(then quit: @escaping () -> Void) {
         guard let window, window.isVisible else { return quit() }
         let alert = NSAlert()
-        alert.messageText = "Quit Dynamic Island?"
+        alert.messageText = "Quit Hevel?"
         alert.informativeText = "The island disappears from the notch until you open the app again. To just close the settings, press ⌘W."
         alert.addButton(withTitle: "Quit")
         alert.addButton(withTitle: "Cancel")

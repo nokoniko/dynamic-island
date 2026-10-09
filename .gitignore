@@ -1,5 +1,6 @@
 # Build output
 .build/
+Hevel.app/
 DynamicIsland.app/
 dist/
 builder/target/

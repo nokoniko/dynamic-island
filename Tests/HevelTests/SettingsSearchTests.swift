@@ -1,5 +1,5 @@
 import Testing
-@testable import DynamicIsland
+@testable import Hevel
 
 struct SettingsSearchTests {
 	@Test(arguments: ["", "   "])
@@ -33,8 +33,8 @@ struct SettingsSearchTests {
 
 	@Test func panesFollowTheirMatches() {
 		#expect(SettingsItem.panes(matching: "update") == [.general])
-		#expect(SettingsItem.panes(matching: "lock") == [.dynamicIsland])
-		#expect(SettingsItem.panes(matching: "animation") == [.dynamicIsland])
+		#expect(SettingsItem.panes(matching: "lock") == [.island])
+		#expect(SettingsItem.panes(matching: "animation") == [.island])
 		#expect(SettingsItem.panes(matching: "xyzzy").isEmpty)
 	}
 

@@ -1,6 +1,6 @@
 import AppKit
 import Testing
-@testable import DynamicIsland
+@testable import Hevel
 
 struct EqualizerGradientTests {
 	private func hsb(_ color: NSColor) -> (hue: CGFloat, saturation: CGFloat, brightness: CGFloat) {

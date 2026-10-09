@@ -1,5 +1,5 @@
 import Testing
-@testable import DynamicIsland
+@testable import Hevel
 
 struct ReleaseFeedTests {
 	@Test(arguments: [

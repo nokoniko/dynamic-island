@@ -11,9 +11,13 @@ use std::process::{Command, Stdio};
 
 pub type Res<T = ()> = Result<T, Box<dyn Error>>;
 
-pub const APP: &str = "DynamicIsland.app";
-pub const INSTALLED: &str = "/Applications/DynamicIsland.app";
-const BIN: &str = ".build/release/DynamicIsland";
+pub const APP: &str = "Hevel.app";
+pub const INSTALLED: &str = "/Applications/Hevel.app";
+/// Where the app was installed before it was renamed to Hevel.
+pub const LEGACY_INSTALLED: &str = "/Applications/DynamicIsland.app";
+/// The name updaters from before the rename look for inside a release zip.
+pub const LEGACY_APP: &str = "DynamicIsland.app";
+const BIN: &str = ".build/release/Hevel";
 /// Single source of truth for the app version (e.g. `1.2.0`).
 const VERSION_FILE: &str = "VERSION";
 /// Committed public half of the update-signing key; baked into Info.plist so the
@@ -43,9 +47,10 @@ fn info_plist(version: &str, repo: Option<&str>, public_key: Option<&str>) -> St
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>DynamicIsland</string>
+	<string>Hevel</string>
 	<key>CFBundleDisplayName</key>
-	<string>Dynamic Island</string>
+	<string>Hevel</string>
+	<!-- Kept from before the rename to Hevel: settings, permissions and updates are tied to it. -->
 	<key>CFBundleIdentifier</key>
 	<string>com.niko.dynamicisland</string>
 	<key>CFBundleVersion</key>
@@ -55,7 +60,7 @@ fn info_plist(version: &str, repo: Option<&str>, public_key: Option<&str>) -> St
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleExecutable</key>
-	<string>DynamicIsland</string>
+	<string>Hevel</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>LSMinimumSystemVersion</key>
@@ -63,9 +68,9 @@ fn info_plist(version: &str, repo: Option<&str>, public_key: Option<&str>) -> St
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Dynamic Island reads the currently playing track from Music and Spotify.</string>
+	<string>Hevel reads the currently playing track from Music and Spotify.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Dynamic Island for Mac</string>
+	<string>Hevel</string>
 {update_keys}</dict>
 </plist>
 "#
@@ -289,7 +294,7 @@ pub fn ask(prompt: &str) -> bool {
 	matches!(answer.trim(), "y" | "Y")
 }
 
-/// Build and assemble DynamicIsland.app. Releases always ship the icon; local
+/// Build and assemble Hevel.app. Releases always ship the icon; local
 /// builds ask (or follow DI_ICON). Returns the version that was built.
 pub fn build_app(release: bool) -> Res<String> {
 	let version = read_version()?;
@@ -321,7 +326,7 @@ pub fn build_app(release: bool) -> Res<String> {
 	}
 	fs::create_dir_all(format!("{APP}/Contents/MacOS"))?;
 	fs::create_dir_all(format!("{APP}/Contents/Resources"))?;
-	fs::copy(BIN, format!("{APP}/Contents/MacOS/DynamicIsland"))?;
+	fs::copy(BIN, format!("{APP}/Contents/MacOS/Hevel"))?;
 	fs::copy(
 		".build/mrhelper.dylib",
 		format!("{APP}/Contents/Resources/mrhelper.dylib"),
@@ -355,7 +360,7 @@ mod tests {
 
 	fn fixture(name: &str) -> PathBuf {
 		Path::new(env!("CARGO_MANIFEST_DIR"))
-			.join("../Tests/DynamicIslandTests/Fixtures/rust-signed")
+			.join("../Tests/HevelTests/Fixtures/rust-signed")
 			.join(name)
 	}
 

@@ -15,7 +15,7 @@ enum UpdateInstaller {
         guard let signature = signature(fromSigFile: sigData) else { throw UpdateError.badSignature }
 
         let fm = FileManager.default
-        let work = fm.temporaryDirectory.appendingPathComponent("DynamicIslandUpdate-\(UUID().uuidString)")
+        let work = fm.temporaryDirectory.appendingPathComponent("HevelUpdate-\(UUID().uuidString)")
         try fm.createDirectory(at: work, withIntermediateDirectories: true)
         do {
             let (downloaded, _) = try await URLSession.shared.download(from: release.zipURL)
@@ -28,8 +28,10 @@ enum UpdateInstaller {
 
             let unpacked = work.appendingPathComponent("unpacked")
             guard run("/usr/bin/ditto", ["-x", "-k", zip.path, unpacked.path]) else { throw UpdateError.badArchive }
-            let newApp = unpacked.appendingPathComponent("DynamicIsland.app")
-            guard let bundle = Bundle(url: newApp),
+            // Releases also carry a copy named DynamicIsland.app for installs from
+            // before the rename, whose updater only looks for that name.
+            guard let newApp = appBundle(in: unpacked),
+                  let bundle = Bundle(url: newApp),
                   bundle.bundleIdentifier == Bundle.main.bundleIdentifier,
                   run("/usr/bin/codesign", ["--verify", "--deep", newApp.path])
             else { throw UpdateError.badArchive }
@@ -41,9 +43,19 @@ enum UpdateInstaller {
         }
     }
 
+    /// `Hevel.app` if the update has it, else whichever app it has.
+    static func appBundle(in folder: URL) -> URL? {
+        let apps = ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [])
+            .filter { $0.hasSuffix(".app") }
+            .sorted()
+        guard let name = apps.contains("Hevel.app") ? "Hevel.app" : apps.first else { return nil }
+        return folder.appendingPathComponent(name)
+    }
+
     /// Hand the verified bundle to a small shell script that waits for this process
     /// to exit, swaps the bundles (rolling back if the copy fails), cleans up and
-    /// reopens the app — then quit so it can run.
+    /// reopens the app — then quit so it can run. The new app keeps its own name, so
+    /// an old `DynamicIsland.app` becomes `Hevel.app` in the same folder.
     @MainActor
     static func installAndRelaunch(newApp: URL, workDir: URL) throws {
         let target = Bundle.main.bundleURL
@@ -54,23 +66,25 @@ enum UpdateInstaller {
             throw UpdateError.notWritable(parent.path)
         }
 
+        let destination = parent.appendingPathComponent(newApp.lastPathComponent)
+
         let script = """
-        pid="$1"; target="$2"; new="$3"; work="$4"
+        pid="$1"; target="$2"; new="$3"; work="$4"; dest="$5"
         while kill -0 "$pid" 2>/dev/null; do sleep 0.2; done
         rm -rf "$target.old"
-        if mv "$target" "$target.old" && ditto "$new" "$target"; then
-          rm -rf "$target.old"
+        if mv "$target" "$target.old" && { [ "$dest" = "$target" ] || rm -rf "$dest"; } && ditto "$new" "$dest"; then
+          rm -rf "$target.old"; app="$dest"
         else
-          rm -rf "$target"; mv "$target.old" "$target"
+          rm -rf "$dest"; mv "$target.old" "$target"; app="$target"
         fi
         rm -rf "$work"
-        open "$target"
+        open "$app"
         """
         let swap = Process()
         swap.executableURL = URL(fileURLWithPath: "/bin/sh")
         swap.arguments = ["-c", script, "sh",
                           String(ProcessInfo.processInfo.processIdentifier),
-                          target.path, newApp.path, workDir.path]
+                          target.path, newApp.path, workDir.path, destination.path]
         do { try swap.run() } catch { throw UpdateError.installFailed }
         NSApp.terminate(nil)
     }

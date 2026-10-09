@@ -1,6 +1,6 @@
 import CoreGraphics
 import Testing
-@testable import DynamicIsland
+@testable import Hevel
 
 struct NotchGeometryTests {
 	@Test func measuresTheNotchBetweenTheAuxiliaryAreas() {
@@ -88,7 +88,7 @@ struct FullscreenDetectionTests {
 					   windows: [FakeWindow(owner: "Dock", layer: 26, bounds: menuBar)],
 					   isFullscreen: false),
 		WindowListCase(testDescription: "our own panel",
-					   windows: [FakeWindow(owner: "DynamicIsland", layer: 25, bounds: menuBar)],
+					   windows: [FakeWindow(owner: "Hevel", layer: 25, bounds: menuBar)],
 					   isFullscreen: false),
 		WindowListCase(testDescription: "partial-width strip",
 					   windows: [FakeWindow(owner: "Spotlight", layer: 25, bounds: CGRect(x: 500, y: 0, width: 300, height: 37))],

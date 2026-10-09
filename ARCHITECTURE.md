@@ -1,4 +1,4 @@
-# Dynamic Island for macOS — Technical Handoff
+# Hevel — Technical Handoff
 
 > Context document for an AI model taking over this project. It describes what the
 > app does, how it is built, every non-obvious technical decision, and the known
@@ -9,7 +9,7 @@
 A native macOS menu-bar app (no Dock icon, no main window) that draws a small
 "Dynamic Island"–style widget around the MacBook notch — modeled on
 dynamiclake.com. It is a SwiftPM **executable** (not an Xcode project); it is
-built and bundled by `./build_app.sh` into `DynamicIsland.app`, then ad-hoc
+built and bundled by `./build_app.sh` into `Hevel.app`, then ad-hoc
 signed.
 
 Core behaviors:
@@ -59,7 +59,7 @@ builder/                           Rust build tool (`cargo run` builds the .app)
   src/main.rs                      `cargo run` — build, optionally install/open
   src/bin/release.rs               maintainer-only, GITIGNORED (not in the repo):
                                    keygen + build/zip/sign/publish a release
-Tests/DynamicIslandTests/          Swift Testing suite (+ Fixtures/rust-signed)
+Tests/HevelTests/                  Swift Testing suite (+ Fixtures/rust-signed)
 test.sh                            runs `swift test` + `cargo test` (handles CLT-only)
 TESTING.md                         how to test + manual pre-release checklist
 .github/workflows/tests.yml        CI: both suites on macos-latest
@@ -74,7 +74,7 @@ Assets/AppIcon.svg                 app icon source (AppIcon.png is used if there
                                    About section in settings.
 Assets/update_public_key.txt       public Ed25519 key for updates (from keygen)
 Helpers/mrhelper.c                 C bridge to the private MediaRemote framework
-Sources/DynamicIsland/
+Sources/Hevel/
   App/
     main.swift                     entry point (sets .accessory activation policy)
     AppDelegate.swift              NSApplication delegate; menu-bar item + menu
@@ -110,7 +110,7 @@ Sources/DynamicIsland/
     SettingsView.swift             System Settings–style window: search + sidebar of panes
     SettingsCatalog.swift          panes + every setting's title/icon/search keywords
     GeneralSettingsView.swift      General: About, Software Update schedule, Startup
-    IslandSettingsView.swift       Dynamic Island: visibility, animation, lock toggles
+    IslandSettingsView.swift       Island: visibility, animation, lock toggles
     SettingsIcon.swift             colored rounded-square icons for sidebar and rows
     SettingsWindowController.swift opens the single settings window (menu → Settings…)
   Updater/
@@ -353,7 +353,7 @@ if wasPlaying && !isPlaying && !newTitle.isEmpty && pauseLingers {
 
 Lock/unlock *detection*: `DistributedNotificationCenter` observers for
 `com.apple.screenIsLocked` / `screenIsUnlocked` fire reliably (confirmed via
-`/tmp/dynamicisland.log`). They call `NotchController.setLocked(_:)`.
+`/tmp/hevel.log`). They call `NotchController.setLocked(_:)`.
 
 **Drawing on the lock screen IS possible** — but *not* by raising a window's
 level (that stays behind loginwindow's curtain). The working technique is to put
@@ -397,7 +397,7 @@ are private and may change across macOS releases — hence the fail-silently des
 ## 9. Other components
 
 - `AppDelegate.swift` — creates the menu-bar `NSStatusItem` (SF Symbol
-  `capsule.fill`), menu = "Dynamic Island <version>" + "Check for Updates…" +
+  `capsule.fill`), menu = "Hevel <version>" + "Check for Updates…" +
   "Quit"; owns the model, `NotchController` and `Updater`; starts the model and
   the updater. (A timer feature was added then **removed** entirely at the user's
   request — don't reintroduce it.)
@@ -409,10 +409,10 @@ are private and may change across macOS releases — hence the fail-silently des
 ## 10. Build & run
 
 ```bash
-cd builder && cargo run        # build + assemble + sign DynamicIsland.app,
+cd builder && cargo run        # build + assemble + sign Hevel.app,
                                # then prompts: move to /Applications? open now?
-open DynamicIsland.app         # run (if you answered no to the open prompt)
-pkill -f DynamicIsland.app     # quit
+open Hevel.app                 # run (if you answered no to the open prompt)
+pkill -f Hevel.app             # quit
 
 # maintainer only — needs the local, gitignored builder/src/bin/release.rs:
 cd builder && cargo run --bin release -- keygen   # once: create the signing key
@@ -468,12 +468,27 @@ CryptoKit verifies — both are standard RFC 8032 Ed25519 (cross-tested).
 **Releasing.** Bump `VERSION`, commit + push, then `cargo run --bin release`. It
 refuses to run if the private key is missing or doesn't match the committed public
 key, builds (always with icon), zips with `ditto -c -k --keepParent` →
-`dist/DynamicIsland-<v>.zip`, writes the hex signature to `<zip>.sig`, makes a
-drag-to-install `dist/DynamicIsland-<v>.dmg` (app + `/Applications` symlink,
+`dist/Hevel-<v>.zip`, writes the hex signature to `<zip>.sig`, makes a
+drag-to-install `dist/Hevel-<v>.dmg` (app + `/Applications` symlink,
 `hdiutil create -format UDZO`, codesigned when `DI_SIGN_IDENTITY` is set), then asks
 before running `gh release create v<v> <zip> <sig> <dmg> --generate-notes`. The dmg
 is only for first installs — the updater picks the `.zip` asset and ignores it. `dist/` is
 gitignored. The tag is created from what's pushed, so push first.
+
+**The rename to Hevel.** The app used to be called Dynamic Island
+(`DynamicIsland.app`). What was renamed: the bundle and executable name, the
+display name and every UI string, the Swift package/target (`Sources/Hevel`,
+`Tests/HevelTests`), release assets (`Hevel-<v>.zip/.dmg`) and the GitHub repo
+(`nokoniko/hevel`; GitHub redirects the old one). What deliberately wasn't: the
+bundle id `com.niko.dynamicisland` (UserDefaults domain, TCC, and the updater's
+same-bundle-id check all hang on it), the `DI*` plist keys and `DI_*` env vars, and
+the key path `~/.config/dynamic-island/`. Updaters from ≤ 2.1.1 look for exactly
+`DynamicIsland.app` inside the zip, so the release tool zips the app twice — as
+`Hevel.app` and as `DynamicIsland.app`. The current updater takes `Hevel.app` and
+installs it under its own name, so `/Applications/DynamicIsland.app` becomes
+`/Applications/Hevel.app`. `cargo run`'s install step removes a leftover
+`/Applications/DynamicIsland.app`. Drop the legacy copy from the zip once old
+installs are gone.
 
 **In the app** (`Updater/`):
 - `Updater` reads `DIUpdateRepo` + `DIUpdatePublicKey`; if either is missing, or
@@ -507,9 +522,9 @@ gitignored. The tag is created from what's pushed, so push first.
 the code signature. Ad-hoc builds get a new identity every build, so users would be
 re-asked for Spotify/Music access after each update (`release` warns about this).
 Fix, no Apple account needed: in Keychain Access → Certificate Assistant → Create a
-Certificate…, name it e.g. "Dynamic Island Signing", Identity Type *Self Signed
+Certificate…, name it e.g. "Hevel Signing", Identity Type *Self Signed
 Root*, Certificate Type *Code Signing*; then set
-`DI_SIGN_IDENTITY = "Dynamic Island Signing"` in `builder/.cargo/config.toml`'s
+`DI_SIGN_IDENTITY = "Hevel Signing"` in `builder/.cargo/config.toml`'s
 `[env]`. (This doesn't notarize — first launch still needs the Gatekeeper
 right-click → Open.)
 

@@ -79,7 +79,7 @@ struct GeneralSettingsView: View {
                         SettingsLabel(.launchAtLogin)
                     }
                     if loginStatus == .requiresApproval {
-                        LabeledContent("Allow Dynamic Island in Login Items.") {
+                        LabeledContent("Allow Hevel in Login Items.") {
                             Button("Open Settings") { SMAppService.openSystemSettingsLoginItems() }
                         }
                         .foregroundStyle(.secondary)
@@ -109,7 +109,7 @@ struct GeneralSettingsView: View {
                     .frame(width: 56, height: 56)
             }
             VStack(alignment: .leading, spacing: 3) {
-                Text("Dynamic Island")
+                Text("Hevel")
                     .font(.title3.weight(.semibold))
                 Text("Version \(updater.currentVersion)")
                     .foregroundStyle(.secondary)

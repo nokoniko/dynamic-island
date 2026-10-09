@@ -1,11 +1,11 @@
 import CryptoKit
 import Foundation
 import Testing
-@testable import DynamicIsland
+@testable import Hevel
 
 struct UpdateSignatureTests {
 	let key = Curve25519.Signing.PrivateKey()
-	let zip = Data("pretend this is DynamicIsland-1.2.0.zip".utf8)
+	let zip = Data("pretend this is Hevel-1.2.0.zip".utf8)
 
 	private func sigFile(for data: Data, signedBy signer: Curve25519.Signing.PrivateKey) throws -> Data {
 		Data((try signer.signature(for: data).hexString + "\n").utf8)

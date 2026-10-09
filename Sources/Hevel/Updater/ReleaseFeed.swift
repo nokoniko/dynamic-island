@@ -28,7 +28,7 @@ enum ReleaseFeed {
         }
         var request = URLRequest(url: url)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("DynamicIsland-Updater", forHTTPHeaderField: "User-Agent")
+        request.setValue("Hevel-Updater", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 20
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -80,9 +80,9 @@ enum UpdateError: LocalizedError {
         case .badArchive:
             return "The update file was damaged or not what was expected."
         case .translocated:
-            return "Move Dynamic Island to your Applications folder and try again."
+            return "Move Hevel to your Applications folder and try again."
         case .notWritable(let path):
-            return "Dynamic Island can't write to \(path)."
+            return "Hevel can't write to \(path)."
         case .installFailed:
             return "Couldn't install the update."
         }

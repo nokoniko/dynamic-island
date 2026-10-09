@@ -2,21 +2,21 @@ import SwiftUI
 
 /// The panes in the settings sidebar.
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general, dynamicIsland
+    case general, island
 
     var id: Self { self }
 
     var title: String {
         switch self {
         case .general: "General"
-        case .dynamicIsland: "Island"
+        case .island: "Island"
         }
     }
 
     var icon: SettingsIcon {
         switch self {
         case .general: SettingsIcon(symbol: "gearshape.fill", color: .gray)
-        case .dynamicIsland: SettingsIcon(symbol: "capsule.fill", color: .black)
+        case .island: SettingsIcon(symbol: "capsule.fill", color: .black)
         }
     }
 }
@@ -34,7 +34,7 @@ enum SettingsItem: CaseIterable {
              .updateTimeOfDay, .launchAtLogin:
             .general
         case .hideWhilePlayerInFront, .showInFullscreen, .flipArtwork, .chargingAnimation, .lockScreenIcon:
-            .dynamicIsland
+            .island
         }
     }
 
