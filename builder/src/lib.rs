@@ -172,6 +172,7 @@ fn want_icon() -> bool {
 /// margin around the artwork, and centers it on a dark squircle in Apple's icon grid
 /// (824 px body, continuous corners, on a 1024 px canvas). macOS 26 puts any icon that
 /// doesn't fill that shape on a grey tile, so the artwork can't float on transparency.
+/// It also writes the trimmed artwork alone, on transparency, for the About section.
 const RASTERIZE_ICON: &str = r#"
 import AppKit
 import SwiftUI
@@ -219,6 +220,13 @@ draw(into: out) {
 	full.draw(in: dst, from: src, operation: .sourceOver, fraction: 1, respectFlipped: false, hints: nil)
 }
 try! out.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: args[2]))
+let artScale = 600 / max(cw, ch)
+let art = canvas(Int(cw * artScale), Int(ch * artScale))
+draw(into: art) {
+	full.draw(in: NSRect(x: 0, y: 0, width: cw * artScale, height: ch * artScale), from: src,
+	          operation: .copy, fraction: 1, respectFlipped: false, hints: nil)
+}
+try! art.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: args[3]))
 "#;
 
 /// The app icon comes from `Assets/AppIcon.svg`, or `Assets/AppIcon.png` if there's no
@@ -243,7 +251,8 @@ fn build_icon(resources_dir: &str) -> Res {
 	let script = format!("{work}/rasterize.swift");
 	let master = format!("{work}/master.png");
 	fs::write(&script, RASTERIZE_ICON)?;
-	run_quiet("swift", &[&script, source, &master]);
+	let artwork = format!("{resources_dir}/IconArtwork.png");
+	run_quiet("swift", &[&script, source, &master, &artwork]);
 	if !Path::new(&master).exists() {
 		eprintln!("⚠︎ could not rasterize {source}; skipping app icon");
 		return Ok(());
@@ -377,15 +386,15 @@ mod tests {
 	#[test]
 	fn parses_github_remotes() {
 		let cases = [
-			("https://github.com/nokoniko/dynamic-island.git\n", Some("nokoniko/dynamic-island")),
-			("https://github.com/nokoniko/dynamic-island", Some("nokoniko/dynamic-island")),
-			("https://github.com/nokoniko/dynamic-island/", Some("nokoniko/dynamic-island")),
-			("https://github.com/nokoniko/dynamic-island.git/", Some("nokoniko/dynamic-island")),
-			("git@github.com:nokoniko/dynamic-island.git", Some("nokoniko/dynamic-island")),
-			("ssh://git@github.com/nokoniko/dynamic-island.git", Some("nokoniko/dynamic-island")),
-			("https://gitlab.com/nokoniko/dynamic-island.git", None),
+			("https://github.com/nokoniko/hevel.git\n", Some("nokoniko/hevel")),
+			("https://github.com/nokoniko/hevel", Some("nokoniko/hevel")),
+			("https://github.com/nokoniko/hevel/", Some("nokoniko/hevel")),
+			("https://github.com/nokoniko/hevel.git/", Some("nokoniko/hevel")),
+			("git@github.com:nokoniko/hevel.git", Some("nokoniko/hevel")),
+			("ssh://git@github.com/nokoniko/hevel.git", Some("nokoniko/hevel")),
+			("https://gitlab.com/nokoniko/hevel.git", None),
 			("https://github.com/nokoniko", None),
-			("https://github.com/nokoniko/dynamic-island/tree/main", None),
+			("https://github.com/nokoniko/hevel/tree/main", None),
 			("", None),
 		];
 		for (url, expected) in cases {
