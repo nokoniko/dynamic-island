@@ -107,10 +107,14 @@ Sources/Hevel/
     SkyLightSpace.swift            private SkyLight bridge for the lock screen
   Settings/
     Preferences.swift              UserDefaults keys + defaults (= the old behavior)
-    SettingsView.swift             System Settings–style window: search + sidebar of panes
+    SettingsView.swift             System Settings–style window: search + sidebar, back/forward
+                                   arrows (SettingsHistory, ⌘[ ⌘]), no title
     SettingsCatalog.swift          panes + every setting's title/icon/search keywords
-    GeneralSettingsView.swift      General: About, Software Update schedule, Startup
+    Localization.swift             tr("…"), the language setting, right-to-left
+    GeneralSettingsView.swift      General: About, a "Software Update ›" link, Startup
+    UpdateSettingsView.swift       General → Software Update: Check Now + every update setting
     IslandSettingsView.swift       Island: visibility, animation, lock toggles
+    LanguageSettingsView.swift     Language: the language picker
     SettingsIcon.swift             colored rounded-square icons for sidebar and rows
     SettingsWindowController.swift opens the single settings window (menu → Settings…)
   Updater/
@@ -475,6 +479,27 @@ before running `gh release create v<v> <zip> <sig> <dmg> --generate-notes`. The 
 is only for first installs — the updater picks the `.zip` asset and ignores it. `dist/` is
 gitignored. The tag is created from what's pushed, so push first.
 
+**Languages.** English, Norwegian Bokmål (`nb`) and Hebrew (`he`). Every visible
+text goes through `tr("English text")` (or `tr("… %@ …", arg)`), which looks it up in
+`Localization/<code>.lproj/Localizable.strings`; the keys are the English texts, so
+`en.lproj` is empty and anything untranslated falls back to English. `builder`
+copies the `.lproj` folders into `Contents/Resources` and lists them in
+`CFBundleLocalizations`. The language comes from Settings → Language
+(`appLanguage`: system/english/norwegian/hebrew; "system" takes the first match in
+`Locale.preferredLanguages`, nn/no → nb, iw → he). `tr` reads the chosen `.lproj`
+directly instead of relying on macOS's launch-time language, so switching is
+instant: the settings view is rebuilt via `.id(language)`, the AppKit menus are
+rebuilt on `UserDefaults.didChangeNotification`, alerts are made on demand.
+Hebrew sets `\.layoutDirection = .rightToLeft` on the settings window, the island
+and the lock island — HStacks mirror, so the art/bolt/lock sit right of the notch
+and the equalizer/ring left — and the track flip turns toward the reading
+direction. The window's title bar (traffic lights) stays as AppKit set it at launch.
+To add a language: a new `<code>.lproj/Localizable.strings`, a case in
+`AppLanguage`, the code in `CFBundleLocalizations`. `LocalizationTests` fail if a
+`tr` text is missing from a table, a table has unused keys, or placeholders differ.
+Test a language without changing your settings: `Hevel.app/Contents/MacOS/Hevel
+-appLanguage hebrew`.
+
 **The rename to Hevel.** The app used to be called Dynamic Island
 (`DynamicIsland.app`). What was renamed: the bundle and executable name, the
 display name and every UI string, the Swift package/target (`Sources/Hevel`,
@@ -504,6 +529,9 @@ installs are gone.
   `AppDelegate`: nothing playing, settings closed, screen not locked), retried on
   every 5-min tick. Only a failed install (translocated, folder not writable) shows
   an alert. "Check Now" from the user still asks.
+- **Skip small updates** (off by default): background checks ignore a release that
+  only changes the last number (`ReleaseFeed.isSmallUpdate`: 2.2.0 → 2.2.7 skipped,
+  → 2.3.0 not). "Check Now" still offers every update.
   Background checks are silent unless there's an update (and not one the user
   chose to skip — stored in UserDefaults `DIUpdaterSkippedVersion`).
 - `ReleaseFeed` calls `GET /repos/<repo>/releases/latest` (drafts/prereleases are

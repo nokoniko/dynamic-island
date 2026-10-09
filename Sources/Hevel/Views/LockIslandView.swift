@@ -1,10 +1,11 @@
 import SwiftUI
 
 /// Static, non-interactive island shown on the lock screen: a notch-sized black
-/// pill with a lock icon peeking to the left of the notch. Lives in its own panel
+/// pill with a lock icon peeking to the left of the notch (right in Hebrew). Lives in its own panel
 /// (see `NotchController.buildLockWindow`), so it carries no live state.
 struct LockIslandView: View {
     let metrics: NotchMetrics
+    @AppStorage(Preferences.appLanguageKey) private var language = AppLanguage.system
 
     private var shape: NotchShape {
         NotchShape(topRadius: 0, bottomRadius: metrics.collapsedCornerRadius)
@@ -27,5 +28,6 @@ struct LockIslandView: View {
             }
             .clipShape(shape)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .environment(\.layoutDirection, Localization.isRightToLeft ? .rightToLeft : .leftToRight)
     }
 }

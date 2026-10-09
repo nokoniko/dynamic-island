@@ -20,4 +20,19 @@ struct ReleaseFeedTests {
 	func comparesDottedVersionsNumerically(candidate: String, current: String, isNewer: Bool) {
 		#expect(ReleaseFeed.isVersion(candidate, newerThan: current) == isNewer)
 	}
+
+	@Test(arguments: [
+		("2.2.7", "2.2.0", true),
+		("2.2.1", "2.2", true),
+		("2.2.10", "2.2.9", true),
+		("2.3.0", "2.2.7", false),
+		("2.3", "2.2.0", false),
+		("3.0.0", "2.9.9", false),
+		("2.3.4", "2.2.0", false),
+		("2.2.0", "2.2.0", false),
+		("2.2.0", "2.2.7", false),
+	])
+	func smallUpdatesOnlyChangeTheLastNumber(candidate: String, current: String, isSmall: Bool) {
+		#expect(ReleaseFeed.isSmallUpdate(candidate, from: current) == isSmall)
+	}
 }

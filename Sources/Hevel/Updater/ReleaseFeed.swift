@@ -50,9 +50,6 @@ enum ReleaseFeed {
 
     /// Dotted numeric comparison, so "1.10.0" is newer than "1.9.2".
     static func isVersion(_ a: String, newerThan b: String) -> Bool {
-        func parts(_ v: String) -> [Int] {
-            v.split(separator: ".").map { Int($0.prefix(while: \.isNumber)) ?? 0 }
-        }
         let pa = parts(a), pb = parts(b)
         for i in 0..<max(pa.count, pb.count) {
             let x = i < pa.count ? pa[i] : 0
@@ -60,6 +57,20 @@ enum ReleaseFeed {
             if x != y { return x > y }
         }
         return false
+    }
+
+    /// A newer version that only changes the last number: 2.2.0 → 2.2.7 is small,
+    /// 2.2.7 → 2.3.0 isn't.
+    static func isSmallUpdate(_ candidate: String, from current: String) -> Bool {
+        let pc = parts(candidate), pr = parts(current)
+        let sameMinor = (0..<2).allSatisfy { i in
+            (i < pc.count ? pc[i] : 0) == (i < pr.count ? pr[i] : 0)
+        }
+        return sameMinor && isVersion(candidate, newerThan: current)
+    }
+
+    private static func parts(_ version: String) -> [Int] {
+        version.split(separator: ".").map { Int($0.prefix(while: \.isNumber)) ?? 0 }
     }
 }
 
@@ -74,17 +85,17 @@ enum UpdateError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .network:
-            return "Couldn't reach GitHub."
+            return tr("Couldn't reach GitHub.")
         case .badSignature:
-            return "The update didn't have a valid signature, so it wasn't installed."
+            return tr("The update didn't have a valid signature, so it wasn't installed.")
         case .badArchive:
-            return "The update file was damaged or not what was expected."
+            return tr("The update file was damaged or not what was expected.")
         case .translocated:
-            return "Move Hevel to your Applications folder and try again."
+            return tr("Move Hevel to your Applications folder and try again.")
         case .notWritable(let path):
-            return "Hevel can't write to \(path)."
+            return tr("Hevel can't write to %@.", path)
         case .installFailed:
-            return "Couldn't install the update."
+            return tr("Couldn't install the update.")
         }
     }
 }

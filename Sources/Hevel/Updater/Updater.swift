@@ -63,7 +63,7 @@ final class Updater: ObservableObject {
     /// background check only speaks up when there's an update the user hasn't skipped.
     func check(userInitiated: Bool) {
         guard isEnabled, let repo, let publicKey else {
-            if userInitiated { inform("Automatic updates aren't enabled in this build.") }
+            if userInitiated { inform(tr("Automatic updates aren't enabled in this build.")) }
             return
         }
         guard !isChecking else { return }
@@ -80,11 +80,15 @@ final class Updater: ObservableObject {
                 guard let release = latest,
                       ReleaseFeed.isVersion(release.version, newerThan: self.currentVersion)
                 else {
-                    if userInitiated { self.inform("You're on the latest version (\(self.currentVersion)).") }
+                    if userInitiated { self.inform(tr("You're on the latest version (%@).", self.currentVersion)) }
                     return
                 }
                 if !userInitiated,
                    UserDefaults.standard.string(forKey: self.skippedVersionKey) == release.version {
+                    return
+                }
+                if !userInitiated, Preferences.skipSmallUpdates,
+                   ReleaseFeed.isSmallUpdate(release.version, from: self.currentVersion) {
                     return
                 }
                 if !userInitiated, Preferences.installUpdatesAutomatically {
@@ -102,7 +106,7 @@ final class Updater: ObservableObject {
             } catch {
                 // Quiet about background network hiccups; loud once the user is involved.
                 if userInitiated || installing {
-                    self.inform("The update failed: \(error.localizedDescription)")
+                    self.inform(tr("The update failed: %@", error.localizedDescription))
                 } else {
                     self.retryAfter = Date().addingTimeInterval(30 * 60)
                 }
@@ -119,18 +123,18 @@ final class Updater: ObservableObject {
             try UpdateInstaller.installAndRelaunch(newApp: pending.app, workDir: pending.workDir)
         } catch {
             self.pending = nil
-            inform("Hevel \(pending.version) couldn't be installed: \(error.localizedDescription)")
+            inform(tr("Hevel %1$@ couldn't be installed: %2$@", pending.version, error.localizedDescription))
         }
     }
 
     /// Returns true if the user wants to install now.
     private func askToInstall(_ release: ReleaseInfo) -> Bool {
         let alert = NSAlert()
-        alert.messageText = "Hevel \(release.version) is available"
-        alert.informativeText = "You have \(currentVersion). Update now? The app will restart."
-        alert.addButton(withTitle: "Update")
-        alert.addButton(withTitle: "Later")
-        alert.addButton(withTitle: "Skip This Version")
+        alert.messageText = tr("Hevel %@ is available", release.version)
+        alert.informativeText = tr("You have %@. Update now? The app will restart.", currentVersion)
+        alert.addButton(withTitle: tr("Update"))
+        alert.addButton(withTitle: tr("Later"))
+        alert.addButton(withTitle: tr("Skip This Version"))
         NSApp.activate()
         switch alert.runModal() {
         case .alertFirstButtonReturn:
@@ -147,6 +151,7 @@ final class Updater: ObservableObject {
         let alert = NSAlert()
         alert.messageText = "Hevel"
         alert.informativeText = text
+        alert.addButton(withTitle: tr("OK"))
         NSApp.activate()
         alert.runModal()
     }

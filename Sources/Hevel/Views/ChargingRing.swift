@@ -25,6 +25,8 @@ struct ChargingRing: View {
                 .trim(from: 0, to: fill)
                 .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))   // start at 12 o'clock
+                // Fills clockwise, or counter-clockwise when the island is mirrored (Hebrew).
+                .flipsForRightToLeftLayoutDirection(true)
             Text("\(level)")
                 .font(.system(size: size * 0.34, weight: .bold).monospacedDigit())
                 .foregroundStyle(.white)

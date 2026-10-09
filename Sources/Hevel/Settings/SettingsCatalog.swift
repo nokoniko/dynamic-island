@@ -2,21 +2,26 @@ import SwiftUI
 
 /// The panes in the settings sidebar.
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general, island
+    case general, island, language
 
     var id: Self { self }
 
-    var title: String {
+    /// The English name; also the key for the translations.
+    var englishTitle: String {
         switch self {
         case .general: "General"
         case .island: "Island"
+        case .language: "Language"
         }
     }
+
+    var title: String { tr(englishTitle) }
 
     var icon: SettingsIcon {
         switch self {
         case .general: SettingsIcon(symbol: "gearshape.fill", color: .gray)
         case .island: SettingsIcon(symbol: "capsule.fill", color: .black)
+        case .language: SettingsIcon(symbol: "globe", color: .blue)
         }
     }
 }
@@ -24,28 +29,36 @@ enum SettingsPane: String, CaseIterable, Identifiable {
 /// Every setting the window shows, with the words the sidebar search finds it by.
 /// The rows take their title and icon from here, so search and window can't drift apart.
 enum SettingsItem: CaseIterable {
-    case about, checkForUpdates, autoCheckForUpdates, installUpdatesAutomatically, updateFrequency, updateTimeOfDay
-    case launchAtLogin
+    case about, checkForUpdates, autoCheckForUpdates, installUpdatesAutomatically, skipSmallUpdates, updateFrequency
+    case updateTimeOfDay
+    case language, launchAtLogin
     case hideWhilePlayerInFront, showInFullscreen, flipArtwork, chargingAnimation, lockScreenIcon
 
     var pane: SettingsPane {
         switch self {
-        case .about, .checkForUpdates, .autoCheckForUpdates, .installUpdatesAutomatically, .updateFrequency,
+        case .about, .checkForUpdates, .autoCheckForUpdates, .installUpdatesAutomatically, .skipSmallUpdates, .updateFrequency,
              .updateTimeOfDay, .launchAtLogin:
             .general
+        case .language:
+            .language
         case .hideWhilePlayerInFront, .showInFullscreen, .flipArtwork, .chargingAnimation, .lockScreenIcon:
             .island
         }
     }
 
-    var title: String {
+    var title: String { tr(englishTitle) }
+
+    /// The English title; also the key for the translations.
+    var englishTitle: String {
         switch self {
         case .about: "About"
         case .checkForUpdates: "Software Update"
         case .autoCheckForUpdates: "Check for updates automatically"
         case .installUpdatesAutomatically: "Install updates automatically"
+        case .skipSmallUpdates: "Skip small updates"
         case .updateFrequency: "How often"
         case .updateTimeOfDay: "Time of day"
+        case .language: "Language"
         case .launchAtLogin: "Launch at login"
         case .hideWhilePlayerInFront: "Hide while the playing app is in front"
         case .showInFullscreen: "Show in fullscreen apps"
@@ -61,8 +74,10 @@ enum SettingsItem: CaseIterable {
         case .checkForUpdates: ["update", "check now", "new version", "latest", "last checked"]
         case .autoCheckForUpdates: ["update", "automatic", "background"]
         case .installUpdatesAutomatically: ["update", "install", "silent", "automatic", "background", "restart"]
+        case .skipSmallUpdates: ["update", "skip", "small", "minor", "patch", "bugfix"]
         case .updateFrequency: ["update", "frequency", "schedule", "interval", "hourly", "daily", "weekly", "every"]
         case .updateTimeOfDay: ["update", "schedule", "morning", "afternoon", "evening", "time"]
+        case .language: ["language", "translation", "english", "norwegian", "norsk", "hebrew", "עברית", "språk", "שפה"]
         case .launchAtLogin: ["login items", "startup", "start", "boot", "open"]
         case .hideWhilePlayerInFront: ["hide", "player", "spotify", "music", "front", "focus", "app"]
         case .showInFullscreen: ["fullscreen", "full screen", "hide", "video", "game"]
@@ -78,8 +93,10 @@ enum SettingsItem: CaseIterable {
         case .checkForUpdates: "arrow.down.circle.fill"
         case .autoCheckForUpdates: "arrow.triangle.2.circlepath"
         case .installUpdatesAutomatically: "arrow.down.app.fill"
+        case .skipSmallUpdates: "forward.fill"
         case .updateFrequency: "calendar"
         case .updateTimeOfDay: "clock.fill"
+        case .language: "globe"
         case .launchAtLogin: "power"
         case .hideWhilePlayerInFront: "macwindow"
         case .showInFullscreen: "arrow.up.left.and.arrow.down.right"
@@ -92,8 +109,9 @@ enum SettingsItem: CaseIterable {
     var color: Color {
         switch self {
         case .about, .autoCheckForUpdates, .launchAtLogin: .gray
-        case .checkForUpdates: .blue
+        case .checkForUpdates, .language: .blue
         case .installUpdatesAutomatically: .purple
+        case .skipSmallUpdates: .teal
         case .updateFrequency: .red
         case .updateTimeOfDay: .orange
         case .hideWhilePlayerInFront: .blue
@@ -106,12 +124,13 @@ enum SettingsItem: CaseIterable {
 
     /// The settings a search shows: all of them for an empty query, otherwise those
     /// where every word of the query appears in the title, a keyword or the pane name
-    /// (so "general" lists the whole General pane).
+    /// (so "general" lists the whole General pane) — in English or the chosen language.
     static func matching(_ query: String) -> [SettingsItem] {
         let words = query.split(whereSeparator: \.isWhitespace)
         guard !words.isEmpty else { return allCases }
         return allCases.filter { item in
-            let haystack = ([item.title, item.pane.title] + item.keywords).joined(separator: " ")
+            let names = [item.title, item.englishTitle, item.pane.title, item.pane.englishTitle]
+            let haystack = (names + item.keywords).joined(separator: " ")
             return words.allSatisfy { haystack.range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
         }
     }

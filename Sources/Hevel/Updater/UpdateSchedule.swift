@@ -8,10 +8,10 @@ enum UpdateFrequency: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .hourly: "Every hour"
-        case .daily: "Every day"
-        case .everyTwoDays: "Every 2 days"
-        case .weekly: "Every week"
+        case .hourly: tr("Every hour")
+        case .daily: tr("Every day")
+        case .everyTwoDays: tr("Every 2 days")
+        case .weekly: tr("Every week")
         }
     }
 
@@ -34,9 +34,9 @@ enum UpdateTimeOfDay: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .morning: "Morning"
-        case .afternoon: "Afternoon"
-        case .evening: "Evening"
+        case .morning: tr("Morning")
+        case .afternoon: tr("Afternoon")
+        case .evening: tr("Evening")
         }
     }
 

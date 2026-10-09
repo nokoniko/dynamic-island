@@ -10,9 +10,14 @@ struct PreferencesTests {
 		(Preferences.lockScreenIconKey, true),
 		(Preferences.autoCheckForUpdatesKey, true),
 		(Preferences.installUpdatesAutomaticallyKey, true),
+		(Preferences.skipSmallUpdatesKey, false),
 	])
 	func defaultsKeepTheOriginalBehavior(key: String, value: Bool) {
 		#expect(Preferences.defaults[key] as? Bool == value)
+	}
+
+	@Test func languageFollowsTheSystem() {
+		#expect(Preferences.defaults[Preferences.appLanguageKey] as? String == AppLanguage.system.rawValue)
 	}
 
 	@Test func updatesAreCheckedDailyInTheMorning() {
@@ -21,6 +26,6 @@ struct PreferencesTests {
 	}
 
 	@Test func everySettingHasADefault() {
-		#expect(Preferences.defaults.count == 9)
+		#expect(Preferences.defaults.count == 11)
 	}
 }

@@ -61,6 +61,14 @@ fn info_plist(version: &str, repo: Option<&str>, public_key: Option<&str>) -> St
 	<string>APPL</string>
 	<key>CFBundleExecutable</key>
 	<string>Hevel</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>nb</string>
+		<string>he</string>
+	</array>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>LSMinimumSystemVersion</key>
@@ -331,6 +339,14 @@ pub fn build_app(release: bool) -> Res<String> {
 		".build/mrhelper.dylib",
 		format!("{APP}/Contents/Resources/mrhelper.dylib"),
 	)?;
+	// Translations: Localization/<code>.lproj → Contents/Resources (see Localization.swift).
+	for entry in fs::read_dir("Localization")? {
+		let path = entry?.path();
+		if path.extension().is_some_and(|e| e == "lproj") {
+			let name = path.file_name().unwrap().to_string_lossy().into_owned();
+			run_checked("ditto", &[&path.to_string_lossy(), &format!("{APP}/Contents/Resources/{name}")])?;
+		}
+	}
 	fs::write(
 		format!("{APP}/Contents/Info.plist"),
 		info_plist(&version, repo.as_deref(), key.as_deref()),

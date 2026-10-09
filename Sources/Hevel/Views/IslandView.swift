@@ -11,12 +11,15 @@ struct IslandView: View {
     @ObservedObject var model: NowPlayingModel
     @ObservedObject var state: IslandState
     @AppStorage(Preferences.flipArtworkKey) private var flipArtwork = true
+    /// Hebrew mirrors the island like the rest of the UI: art right, equalizer left.
+    @AppStorage(Preferences.appLanguageKey) private var language = AppLanguage.system
 
     private var m: NotchMetrics { state.metrics }
 
     var body: some View {
         island
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .environment(\.layoutDirection, Localization.isRightToLeft ? .rightToLeft : .leftToRight)
     }
 
     private var island: some View {
@@ -92,7 +95,8 @@ struct IslandView: View {
             // Album art does a coin flip on track change; when paused it shrinks in
             // place and dims before hiding.
             FlippingArtwork(image: model.artwork, token: model.artworkToken,
-                            forward: model.flipForward,
+                            // "Next" flips toward the reading direction.
+                            forward: model.flipForward != Localization.isRightToLeft,
                             size: m.notchHeight - 10, corner: 5, animated: flipArtwork)
                 .scaleEffect(musicDimmed ? 0.65 : 1)
                 .opacity(musicDimmed ? 0.5 : 1)

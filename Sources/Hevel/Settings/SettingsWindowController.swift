@@ -7,10 +7,6 @@ import SwiftUI
 final class SettingsWindowController: NSObject, NSWindowDelegate {
     private let updater: Updater
     private var window: NSWindow?
-    /// The selected pane's name; SwiftUI reports it before the window exists.
-    private var title = SettingsPane.general.title {
-        didSet { window?.title = title }
-    }
 
     var isOpen: Bool { window?.isVisible == true }
 
@@ -20,16 +16,17 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     func show() {
         if window == nil {
-            let view = SettingsView(updater: updater) { [weak self] title in
-                self?.title = title
-            }
+            let view = SettingsView(updater: updater)
             let hosting = NSHostingController(rootView: view)
             // Let SwiftUI drive the toolbar (sidebar layout), like System Settings.
             hosting.sceneBridgingOptions = [.toolbars]
             let window = NSWindow(contentViewController: hosting)
-            window.title = title
+            window.title = "Hevel"
             window.styleMask = [.titled, .closable, .miniaturizable, .fullSizeContentView]
             window.toolbarStyle = .unified
+            // The sidebar shows where you are, so no title in the window; it's still
+            // there for the Window menu, Mission Control and VoiceOver.
+            window.titleVisibility = .hidden
             window.isReleasedWhenClosed = false
             window.delegate = self
             self.window = window
@@ -67,10 +64,10 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     func confirmQuit(then quit: @escaping () -> Void) {
         guard let window, window.isVisible else { return quit() }
         let alert = NSAlert()
-        alert.messageText = "Quit Hevel?"
-        alert.informativeText = "The island disappears from the notch until you open the app again. To just close the settings, press ⌘W."
-        alert.addButton(withTitle: "Quit")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = tr("Quit Hevel?")
+        alert.informativeText = tr("The island disappears from the notch until you open the app again. To just close the settings, press ⌘W.")
+        alert.addButton(withTitle: tr("Quit"))
+        alert.addButton(withTitle: tr("Cancel"))
         alert.beginSheetModal(for: window) { response in
             if response == .alertFirstButtonReturn { quit() }
         }

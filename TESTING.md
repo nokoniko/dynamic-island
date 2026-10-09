@@ -26,7 +26,9 @@ CI runs both suites on `macos-latest` for every push to `main` and every pull re
 
 | Area | Tests | What they pin down |
 |---|---|---|
-| Updater | `ReleaseFeedTests`, `UpdateSignatureTests` | Numeric version comparison; signature checks (valid, tampered zip, wrong key, empty or non-hex `.sig`, bad public keys) |
+| Updater | `ReleaseFeedTests`, `UpdateSignatureTests` | Numeric version comparison, which updates count as small; signature checks (valid, tampered zip, wrong key, empty or non-hex `.sig`, bad public keys) |
+| Settings navigation | `SettingsHistoryTests` | Back/forward retrace the pages, a new page drops the forward steps, Software Update belongs to General |
+| Languages | `LocalizationTests` | Every `tr` text is in the Norwegian and Hebrew tables, no unused keys, matching `%@` placeholders; which language "System" picks |
 | Install | `UpdateInstallerTests` | Picks `Hevel.app` from an update, falls back to `DynamicIsland.app` (releases from before the rename) |
 | Rust ↔ CryptoKit | `RustSignedFixtureTests` + `signature_fixture_comes_from_the_builders_signing` | A zip signed by the builder's `sign_hex` verifies in CryptoKit, and fails once tampered |
 | Media flow | `ReconcileTests`, `PauseLingerTests` | The three reconcile rules, `sameTrack`, and which sources linger on pause |
@@ -80,6 +82,7 @@ Run through this before a release. These depend on the live system and can't run
 - [ ] Publish a newer release, then **Check for Updates…** → **Update**: the app relaunches on the new version.
 - [ ] Spotify/Music access is **not** asked for again (requires a stable `DI_SIGN_IDENTITY`).
 - [ ] With **Install updates automatically** on: a background check installs a newer release without a prompt, but only once nothing is playing and settings is closed; the island comes back on the new version.
+- [ ] With **Skip small updates** on, a release that only bumps the last number (2.2.0 → 2.2.1) isn't installed in the background; 2.3.0 is. **Check Now** still offers 2.2.1.
 - [ ] **Skip This Version** stops the background prompt for that version; **Later** asks again next check.
 - [ ] Running from Downloads (translocated) shows the "Move Hevel to your Applications folder" message.
 
@@ -87,6 +90,8 @@ Run through this before a release. These depend on the live system and can't run
 - [ ] Menu bar icon → **Settings…** opens the window centered on the screen you're on and in front of other apps (even with another app active); opening it again reuses the window without moving it.
 - [ ] While it's open the app is in the Dock and ⌘Tab; ⌘W closes it and the Dock icon goes away.
 - [ ] ⌘Q in settings asks "Quit Hevel?"; **Cancel** keeps everything running, **Quit** quits. Quit from the menu bar icon quits without asking.
+- [ ] General → **Software Update ›** opens the update page; the ‹ › arrows (and ⌘[ / ⌘]) go back and forward through the pages visited, greyed out when there's nowhere to go. Searching "update" shows the update rows right in General.
+- [ ] **Language**: switching to Norsk or עברית changes the window, the menu bar menu and alerts at once, without a restart. Hebrew mirrors the window (sidebar right, panes open at the top) and the island (art/bolt right of the notch, equalizer/ring left); English switches it back.
 - [ ] **Launch at login** survives a log out/in (or asks to be allowed in Login Items).
 - [ ] Each toggle takes effect without a restart: hiding while the player is in front, the cover flip, the charging animation, the lock icon.
 - [ ] **Show in fullscreen apps** (off by default): off hides the island in fullscreen; on keeps it showing there.

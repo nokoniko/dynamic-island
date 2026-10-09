@@ -17,6 +17,9 @@ struct SettingsSearchTests {
 		("weekly", [.updateFrequency]),
 		("album cover", [.flipArtwork]),
 		("silent", [.installUpdatesAutomatically]),
+		("patch", [.skipSmallUpdates]),
+		("hebrew", [.language]),
+		("språk", [.language]),
 	])
 	func findsSettingsByTitleAndKeywords(query: String, expected: [SettingsItem]) {
 		#expect(SettingsItem.matching(query) == expected)

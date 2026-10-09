@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// When the island shows and how it animates.
+/// The Island pane: when the island shows and how it animates.
 struct IslandSettingsView: View {
     /// The rows the sidebar search leaves visible.
     let shown: Set<SettingsItem>
@@ -12,20 +12,19 @@ struct IslandSettingsView: View {
     @AppStorage(Preferences.lockScreenIconKey) private var lockScreenIcon = true
 
     var body: some View {
-        Form {
-            section("Visibility", [
+        Group {
+            section(tr("Visibility"), [
                 (.hideWhilePlayerInFront, $hideWhilePlayerInFront),
                 (.showInFullscreen, $showInFullscreen),
             ])
-            section("Animations", [
+            section(tr("Animations"), [
                 (.flipArtwork, $flipArtwork),
                 (.chargingAnimation, $chargingAnimation),
             ])
-            section("Lock Screen", [
+            section(tr("Lock Screen"), [
                 (.lockScreenIcon, $lockScreenIcon),
             ])
         }
-        .formStyle(.grouped)
     }
 
     /// A section of toggles, left out entirely when the search hides all of them.

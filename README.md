@@ -27,6 +27,7 @@ if you want to use it for windows go to https://github.com/bisonactual/Nikos-Dyn
 - **Charging** — plug in and a ring fills up to your battery level.
 - **Lock screen** — a lock icon next to the notch while the screen is locked.
 - **Auto-updates** — only installs builds signed with the project's key. Menu bar icon → **Check for Updates…**
+- **Languages** — English, Norwegian and Hebrew (right-to-left), following macOS or picked in Settings.
 - **Settings** — menu bar icon → **Settings…** (⌘,): version and updates (how often and what time of day to check), launch at login, and each island feature on or off — with search.
 
 Lives in the menu bar, no Dock icon, ~30 MB of RAM.

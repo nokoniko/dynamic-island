@@ -10,6 +10,8 @@ enum Preferences {
     static let lockScreenIconKey = "lockScreenIcon"
     static let autoCheckForUpdatesKey = "autoCheckForUpdates"
     static let installUpdatesAutomaticallyKey = "installUpdatesAutomatically"
+    static let skipSmallUpdatesKey = "skipSmallUpdates"
+    static let appLanguageKey = "appLanguage"
     static let updateFrequencyKey = "updateFrequency"
     static let updateTimeOfDayKey = "updateTimeOfDay"
     /// Seconds since 1970 of the last check that reached GitHub; absent until the first one.
@@ -25,6 +27,8 @@ enum Preferences {
         lockScreenIconKey: true,
         autoCheckForUpdatesKey: true,
         installUpdatesAutomaticallyKey: true,
+        skipSmallUpdatesKey: false,
+        appLanguageKey: AppLanguage.system.rawValue,
         updateFrequencyKey: UpdateFrequency.daily.rawValue,
         updateTimeOfDayKey: UpdateTimeOfDay.morning.rawValue,
     ]
@@ -39,6 +43,11 @@ enum Preferences {
     static var lockScreenIcon: Bool { UserDefaults.standard.bool(forKey: lockScreenIconKey) }
     static var autoCheckForUpdates: Bool { UserDefaults.standard.bool(forKey: autoCheckForUpdatesKey) }
     static var installUpdatesAutomatically: Bool { UserDefaults.standard.bool(forKey: installUpdatesAutomaticallyKey) }
+    static var skipSmallUpdates: Bool { UserDefaults.standard.bool(forKey: skipSmallUpdatesKey) }
+
+    static var appLanguage: AppLanguage {
+        UserDefaults.standard.string(forKey: appLanguageKey).flatMap(AppLanguage.init) ?? .system
+    }
 
     static var updateFrequency: UpdateFrequency {
         UserDefaults.standard.string(forKey: updateFrequencyKey).flatMap(UpdateFrequency.init) ?? .daily
