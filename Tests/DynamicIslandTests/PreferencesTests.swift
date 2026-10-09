@@ -9,6 +9,7 @@ struct PreferencesTests {
 		(Preferences.chargingAnimationKey, true),
 		(Preferences.lockScreenIconKey, true),
 		(Preferences.autoCheckForUpdatesKey, true),
+		(Preferences.installUpdatesAutomaticallyKey, true),
 	])
 	func defaultsKeepTheOriginalBehavior(key: String, value: Bool) {
 		#expect(Preferences.defaults[key] as? Bool == value)
@@ -20,6 +21,6 @@ struct PreferencesTests {
 	}
 
 	@Test func everySettingHasADefault() {
-		#expect(Preferences.defaults.count == 8)
+		#expect(Preferences.defaults.count == 9)
 	}
 }

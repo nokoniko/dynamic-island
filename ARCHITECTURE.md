@@ -471,6 +471,12 @@ gitignored. The tag is created from what's pushed, so push first.
   counted from the day of the last successful check (`lastUpdateCheck`). A missed
   slot (Mac asleep) runs as soon as it's awake; a failed background check waits
   30 min. "Check for Updates…" / "Check Now" check on demand.
+- **Silent install** ("Install updates automatically", on by default): a background
+  check that finds a new version downloads + verifies it right away and keeps it as
+  `pending`; the swap + relaunch waits until `canRestartQuietly` (set by
+  `AppDelegate`: nothing playing, settings closed, screen not locked), retried on
+  every 5-min tick. Only a failed install (translocated, folder not writable) shows
+  an alert. "Check Now" from the user still asks.
   Background checks are silent unless there's an update (and not one the user
   chose to skip — stored in UserDefaults `DIUpdaterSkippedVersion`).
 - `ReleaseFeed` calls `GET /repos/<repo>/releases/latest` (drafts/prereleases are

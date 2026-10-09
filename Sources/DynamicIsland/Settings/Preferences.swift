@@ -9,12 +9,14 @@ enum Preferences {
     static let chargingAnimationKey = "chargingAnimation"
     static let lockScreenIconKey = "lockScreenIcon"
     static let autoCheckForUpdatesKey = "autoCheckForUpdates"
+    static let installUpdatesAutomaticallyKey = "installUpdatesAutomatically"
     static let updateFrequencyKey = "updateFrequency"
     static let updateTimeOfDayKey = "updateTimeOfDay"
     /// Seconds since 1970 of the last check that reached GitHub; absent until the first one.
     static let lastUpdateCheckKey = "lastUpdateCheck"
 
-    /// The defaults match how the app behaved before it had settings.
+    /// The defaults match how the app behaved before it had settings — except that
+    /// updates now install without asking.
     static let defaults: [String: Any] = [
         hideWhilePlayerInFrontKey: true,
         showInFullscreenKey: false,
@@ -22,6 +24,7 @@ enum Preferences {
         chargingAnimationKey: true,
         lockScreenIconKey: true,
         autoCheckForUpdatesKey: true,
+        installUpdatesAutomaticallyKey: true,
         updateFrequencyKey: UpdateFrequency.daily.rawValue,
         updateTimeOfDayKey: UpdateTimeOfDay.morning.rawValue,
     ]
@@ -35,6 +38,7 @@ enum Preferences {
     static var chargingAnimation: Bool { UserDefaults.standard.bool(forKey: chargingAnimationKey) }
     static var lockScreenIcon: Bool { UserDefaults.standard.bool(forKey: lockScreenIconKey) }
     static var autoCheckForUpdates: Bool { UserDefaults.standard.bool(forKey: autoCheckForUpdatesKey) }
+    static var installUpdatesAutomatically: Bool { UserDefaults.standard.bool(forKey: installUpdatesAutomaticallyKey) }
 
     static var updateFrequency: UpdateFrequency {
         UserDefaults.standard.string(forKey: updateFrequencyKey).flatMap(UpdateFrequency.init) ?? .daily

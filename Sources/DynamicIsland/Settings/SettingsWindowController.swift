@@ -12,6 +12,8 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         didSet { window?.title = title }
     }
 
+    var isOpen: Bool { window?.isVisible == true }
+
     init(updater: Updater) {
         self.updater = updater
     }

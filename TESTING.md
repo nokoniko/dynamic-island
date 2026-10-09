@@ -77,6 +77,7 @@ Run through this before a release. These depend on the live system and can't run
 - [ ] Install the previous release in Applications, grant Automation for Spotify/Music.
 - [ ] Publish a newer release, then **Check for Updates…** → **Update**: the app relaunches on the new version.
 - [ ] Spotify/Music access is **not** asked for again (requires a stable `DI_SIGN_IDENTITY`).
+- [ ] With **Install updates automatically** on: a background check installs a newer release without a prompt, but only once nothing is playing and settings is closed; the island comes back on the new version.
 - [ ] **Skip This Version** stops the background prompt for that version; **Later** asks again next check.
 - [ ] Running from Downloads (translocated) shows the "Move Dynamic Island to your Applications folder" message.
 

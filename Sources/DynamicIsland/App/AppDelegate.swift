@@ -14,9 +14,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Preferences.register()
         controller = NotchController(model: model)
         model.start()
+        updater.canRestartQuietly = { [unowned self] in
+            !model.isPlaying && !settings.isOpen && !Self.screenIsLocked
+        }
         updater.start()
         setupStatusItem()
         setupMainMenu()
+    }
+
+    private static var screenIsLocked: Bool {
+        let session = CGSessionCopyCurrentDictionary() as? [String: Any]
+        return session?["CGSSessionScreenIsLocked"] as? Bool ?? false
     }
 
     func applicationWillTerminate(_ notification: Notification) {

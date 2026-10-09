@@ -8,6 +8,7 @@ struct GeneralSettingsView: View {
     let shown: Set<SettingsItem>
 
     @AppStorage(Preferences.autoCheckForUpdatesKey) private var autoCheckForUpdates = true
+    @AppStorage(Preferences.installUpdatesAutomaticallyKey) private var installUpdatesAutomatically = true
     @AppStorage(Preferences.updateFrequencyKey) private var updateFrequency = UpdateFrequency.daily
     @AppStorage(Preferences.updateTimeOfDayKey) private var updateTimeOfDay = UpdateTimeOfDay.morning
     @AppStorage(Preferences.lastUpdateCheckKey) private var lastUpdateCheck = 0.0
@@ -23,7 +24,7 @@ struct GeneralSettingsView: View {
                 }
             }
 
-            if shown.contains(where: { [.checkForUpdates, .autoCheckForUpdates, .updateFrequency, .updateTimeOfDay].contains($0) }) {
+            if shown.contains(where: { [.checkForUpdates, .autoCheckForUpdates, .installUpdatesAutomatically, .updateFrequency, .updateTimeOfDay].contains($0) }) {
                 Section("Software Update") {
                     if shown.contains(.checkForUpdates) {
                         LabeledContent {
@@ -42,6 +43,13 @@ struct GeneralSettingsView: View {
                         Toggle(isOn: $autoCheckForUpdates) {
                             SettingsLabel(.autoCheckForUpdates)
                         }
+                    }
+                    if shown.contains(.installUpdatesAutomatically) {
+                        Toggle(isOn: $installUpdatesAutomatically) {
+                            SettingsLabel(.installUpdatesAutomatically,
+                                          subtitle: "Without asking — the app restarts when nothing is playing")
+                        }
+                        .disabled(!autoCheckForUpdates)
                     }
                     if shown.contains(.updateFrequency) {
                         Picker(selection: $updateFrequency) {

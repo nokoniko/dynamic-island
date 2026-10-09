@@ -1,6 +1,8 @@
 import AppKit
 
-/// Checks GitHub Releases for a newer signed build and offers to install it.
+/// Checks GitHub Releases for a newer signed build and offers to install it — or,
+/// with "Install updates automatically" on, installs it without asking once the
+/// app can restart unnoticed.
 ///
 /// Configuration comes from Info.plist, written by `builder`: `DIUpdateRepo`
 /// ("owner/repo") and `DIUpdatePublicKey` (hex Ed25519 key). Without both — or
@@ -13,6 +15,10 @@ final class Updater: ObservableObject {
     /// After a background check fails (offline, GitHub down), don't retry before this.
     private var retryAfter: Date?
     @Published private(set) var isChecking = false
+    /// A downloaded and verified update waiting for a quiet moment to restart into.
+    private var pending: (version: String, app: URL, workDir: URL)?
+    /// Whether restarting now would go unnoticed (nothing playing, settings closed…).
+    var canRestartQuietly: () -> Bool = { true }
     private let skippedVersionKey = "DIUpdaterSkippedVersion"
 
     var currentVersion: String {
@@ -44,6 +50,7 @@ final class Updater: ObservableObject {
     }
 
     private func checkIfDue() {
+        if pending != nil { return installPendingIfIdle() }
         let now = Date()
         guard Preferences.autoCheckForUpdates,
               retryAfter.map({ now >= $0 }) ?? true,
@@ -80,6 +87,13 @@ final class Updater: ObservableObject {
                    UserDefaults.standard.string(forKey: self.skippedVersionKey) == release.version {
                     return
                 }
+                if !userInitiated, Preferences.installUpdatesAutomatically {
+                    // Download and verify now; the swap waits for a quiet moment.
+                    let prepared = try await UpdateInstaller.prepare(release, publicKeyHex: publicKey)
+                    self.pending = (release.version, prepared.app, prepared.workDir)
+                    self.installPendingIfIdle()
+                    return
+                }
                 guard self.askToInstall(release) else { return }
 
                 installing = true
@@ -93,6 +107,19 @@ final class Updater: ObservableObject {
                     self.retryAfter = Date().addingTimeInterval(30 * 60)
                 }
             }
+        }
+    }
+
+    /// Restarts into the pending update unless that would interrupt something; the
+    /// 5-minute timer tries again. Only a failed install (e.g. the app can't replace
+    /// itself where it is) speaks up, since that needs the user.
+    private func installPendingIfIdle() {
+        guard let pending, Preferences.installUpdatesAutomatically, canRestartQuietly() else { return }
+        do {
+            try UpdateInstaller.installAndRelaunch(newApp: pending.app, workDir: pending.workDir)
+        } catch {
+            self.pending = nil
+            inform("Dynamic Island \(pending.version) couldn't be installed: \(error.localizedDescription)")
         }
     }
 

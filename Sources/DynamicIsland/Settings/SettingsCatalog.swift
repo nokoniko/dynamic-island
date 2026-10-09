@@ -24,12 +24,14 @@ enum SettingsPane: String, CaseIterable, Identifiable {
 /// Every setting the window shows, with the words the sidebar search finds it by.
 /// The rows take their title and icon from here, so search and window can't drift apart.
 enum SettingsItem: CaseIterable {
-    case about, checkForUpdates, autoCheckForUpdates, updateFrequency, updateTimeOfDay, launchAtLogin
+    case about, checkForUpdates, autoCheckForUpdates, installUpdatesAutomatically, updateFrequency, updateTimeOfDay
+    case launchAtLogin
     case hideWhilePlayerInFront, showInFullscreen, flipArtwork, chargingAnimation, lockScreenIcon
 
     var pane: SettingsPane {
         switch self {
-        case .about, .checkForUpdates, .autoCheckForUpdates, .updateFrequency, .updateTimeOfDay, .launchAtLogin:
+        case .about, .checkForUpdates, .autoCheckForUpdates, .installUpdatesAutomatically, .updateFrequency,
+             .updateTimeOfDay, .launchAtLogin:
             .general
         case .hideWhilePlayerInFront, .showInFullscreen, .flipArtwork, .chargingAnimation, .lockScreenIcon:
             .dynamicIsland
@@ -41,6 +43,7 @@ enum SettingsItem: CaseIterable {
         case .about: "About"
         case .checkForUpdates: "Software Update"
         case .autoCheckForUpdates: "Check for updates automatically"
+        case .installUpdatesAutomatically: "Install updates automatically"
         case .updateFrequency: "How often"
         case .updateTimeOfDay: "Time of day"
         case .launchAtLogin: "Launch at login"
@@ -57,6 +60,7 @@ enum SettingsItem: CaseIterable {
         case .about: ["version", "info", "release notes", "github"]
         case .checkForUpdates: ["update", "check now", "new version", "latest", "last checked"]
         case .autoCheckForUpdates: ["update", "automatic", "background"]
+        case .installUpdatesAutomatically: ["update", "install", "silent", "automatic", "background", "restart"]
         case .updateFrequency: ["update", "frequency", "schedule", "interval", "hourly", "daily", "weekly", "every"]
         case .updateTimeOfDay: ["update", "schedule", "morning", "afternoon", "evening", "time"]
         case .launchAtLogin: ["login items", "startup", "start", "boot", "open"]
@@ -73,6 +77,7 @@ enum SettingsItem: CaseIterable {
         case .about: "info"
         case .checkForUpdates: "arrow.down.circle.fill"
         case .autoCheckForUpdates: "arrow.triangle.2.circlepath"
+        case .installUpdatesAutomatically: "arrow.down.app.fill"
         case .updateFrequency: "calendar"
         case .updateTimeOfDay: "clock.fill"
         case .launchAtLogin: "power"
@@ -88,6 +93,7 @@ enum SettingsItem: CaseIterable {
         switch self {
         case .about, .autoCheckForUpdates, .launchAtLogin: .gray
         case .checkForUpdates: .blue
+        case .installUpdatesAutomatically: .purple
         case .updateFrequency: .red
         case .updateTimeOfDay: .orange
         case .hideWhilePlayerInFront: .blue
