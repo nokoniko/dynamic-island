@@ -97,8 +97,17 @@ Sources/DynamicIsland/
     NotchController+Charging.swift     the plug-in battery flourish
     NotchController+Visibility.swift   hide in fullscreen, lock-screen lock icon
     SkyLightSpace.swift            private SkyLight bridge for the lock screen
+  Settings/
+    Preferences.swift              UserDefaults keys + defaults (= the old behavior)
+    SettingsView.swift             System Settings–style window: search + sidebar of panes
+    SettingsCatalog.swift          panes + every setting's title/icon/search keywords
+    GeneralSettingsView.swift      General: About, Software Update schedule, Startup
+    IslandSettingsView.swift       Dynamic Island: visibility, animation, lock toggles
+    SettingsIcon.swift             colored rounded-square icons for sidebar and rows
+    SettingsWindowController.swift opens the single settings window (menu → Settings…)
   Updater/
-    Updater.swift                  schedule, prompt, orchestrate (menu + daily check)
+    Updater.swift                  prompt, orchestrate (menu + scheduled check)
+    UpdateSchedule.swift           when the next background check is due (pure)
     ReleaseFeed.swift              GitHub Releases API + version comparison
     UpdateInstaller.swift          download, verify signature, unpack, swap, relaunch
 ```
@@ -456,8 +465,12 @@ gitignored. The tag is created from what's pushed, so push first.
 
 **In the app** (`Updater/`):
 - `Updater` reads `DIUpdateRepo` + `DIUpdatePublicKey`; if either is missing, or
-  the app isn't running from a `.app` bundle (`swift run`), it stays off. It checks
-  10 s after launch and every 24 h; "Check for Updates…" checks on demand.
+  the app isn't running from a `.app` bundle (`swift run`), it stays off. 10 s after
+  launch and then every 5 min it asks `UpdateSchedule.nextCheck` whether a check is
+  due: every hour, or every 1/2/7 days at 09:00, 14:00 or 19:00 (Settings → General),
+  counted from the day of the last successful check (`lastUpdateCheck`). A missed
+  slot (Mac asleep) runs as soon as it's awake; a failed background check waits
+  30 min. "Check for Updates…" / "Check Now" check on demand.
   Background checks are silent unless there's an update (and not one the user
   chose to skip — stored in UserDefaults `DIUpdaterSkippedVersion`).
 - `ReleaseFeed` calls `GET /repos/<repo>/releases/latest` (drafts/prereleases are
