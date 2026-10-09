@@ -69,7 +69,9 @@ Assets/AppIcon.svg                 app icon source (AppIcon.png is used if there
                                    on a dark squircle in Apple's grid (824 px body on
                                    1024). macOS 26 puts icons that don't fill that shape
                                    on a grey tile. qlmanage isn't used — its thumbnails
-                                   always get a white background.
+                                   always get a white background. The trimmed artwork
+                                   alone goes to Resources/IconArtwork.png for the
+                                   About section in settings.
 Assets/update_public_key.txt       public Ed25519 key for updates (from keygen)
 Helpers/mrhelper.c                 C bridge to the private MediaRemote framework
 Sources/DynamicIsland/
