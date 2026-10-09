@@ -12,6 +12,8 @@ struct FlippingArtwork: View {
     let forward: Bool
     let size: CGFloat
     let corner: CGFloat
+    /// Off: a new cover just replaces the old one, no flip.
+    var animated = true
 
     @State private var shown: NSImage?
     @State private var angle: Double = 0
@@ -32,7 +34,7 @@ struct FlippingArtwork: View {
             .onChange(of: token) { _, _ in
                 // First real cover (placeholder → image) just appears; only an actual
                 // track change — when we already show a cover — does the flip.
-                if shown == nil { shown = image } else { flip() }
+                if shown == nil || !animated { shown = image } else { flip() }
             }
     }
 

@@ -24,11 +24,19 @@ extension NotchController {
         visibilityTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.updateVisibility() }
         }
+        // Apply the "show in fullscreen apps" setting as soon as it changes.
+        NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.updateVisibility() }
+        }
         updateVisibility()
     }
 
     private func setLocked(_ locked: Bool) {
         if locked {
+            guard Preferences.lockScreenIcon else { return }
             // Built lazily on the first lock — most sessions never lock, so we don't
             // pay for a second hosting view up front.
             if lockPanel == nil { buildLockWindow() }
@@ -43,9 +51,9 @@ extension NotchController {
     }
 
     private func updateVisibility() {
-        // Hide the whole window only in fullscreen (the notch isn't visible then).
-        // The lock screen gets a lock icon instead.
-        let shouldHide = isNotchScreenFullscreen()
+        // Hide the whole window only in fullscreen (the notch isn't visible then),
+        // unless the user wants it there too. The lock screen gets a lock icon instead.
+        let shouldHide = !Preferences.showInFullscreen && isNotchScreenFullscreen()
         guard shouldHide != hiddenForFullscreen else { return }
         hiddenForFullscreen = shouldHide
         if shouldHide {

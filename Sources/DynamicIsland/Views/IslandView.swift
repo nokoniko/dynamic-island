@@ -10,6 +10,7 @@ import SwiftUI
 struct IslandView: View {
     @ObservedObject var model: NowPlayingModel
     @ObservedObject var state: IslandState
+    @AppStorage(Preferences.flipArtworkKey) private var flipArtwork = true
 
     private var m: NotchMetrics { state.metrics }
 
@@ -92,7 +93,7 @@ struct IslandView: View {
             // place and dims before hiding.
             FlippingArtwork(image: model.artwork, token: model.artworkToken,
                             forward: model.flipForward,
-                            size: m.notchHeight - 10, corner: 5)
+                            size: m.notchHeight - 10, corner: 5, animated: flipArtwork)
                 .scaleEffect(musicDimmed ? 0.65 : 1)
                 .opacity(musicDimmed ? 0.5 : 1)
                 .animation(.easeOut(duration: 0.3), value: musicDimmed)

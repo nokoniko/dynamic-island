@@ -6,7 +6,7 @@ extension NotchController {
         power.onPlugChange = { [weak self] pluggedIn in
             guard let self else { return }
             self.chargingClearWork?.cancel()
-            if pluggedIn {
+            if pluggedIn && Preferences.chargingAnimation {
                 self.state.chargingFlourish = self.power.level
                 // Auto-dismiss the flourish after a few seconds.
                 let work = DispatchWorkItem { [weak self] in self?.state.chargingFlourish = nil }

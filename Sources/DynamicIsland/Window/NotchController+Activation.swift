@@ -21,11 +21,17 @@ extension NotchController {
             .sink { [weak self] _ in Task { @MainActor in self?.updateSuppressed() } }
             .store(in: &cancellables)
 
+        // Apply the "hide while the playing app is in front" setting as soon as it changes.
+        NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in Task { @MainActor in self?.updateSuppressed() } }
+
         updateSuppressed()
     }
 
     private func updateSuppressed() {
-        state.suppressedForFrontmost = isPlayerFrontmost()
+        state.suppressedForFrontmost = Preferences.hideWhilePlayerInFront && isPlayerFrontmost()
         updateForPointer()
     }
 
