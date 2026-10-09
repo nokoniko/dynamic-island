@@ -6,11 +6,13 @@ import AppKit
 /// ("owner/repo") and `DIUpdatePublicKey` (hex Ed25519 key). Without both — or
 /// when not running from a `.app` bundle (e.g. `swift run`) — the updater is off.
 @MainActor
-final class Updater {
-    private let repo: String?
+final class Updater: ObservableObject {
+    let repo: String?
     private let publicKey: String?
     private var timer: Timer?
-    private var busy = false
+    /// After a background check fails (offline, GitHub down), don't retry before this.
+    private var retryAfter: Date?
+    @Published private(set) var isChecking = false
     private let skippedVersionKey = "DIUpdaterSkippedVersion"
 
     var currentVersion: String {
@@ -28,15 +30,26 @@ final class Updater {
         publicKey = (info["DIUpdatePublicKey"] as? String).flatMap { $0.isEmpty ? nil : $0 }
     }
 
-    /// Check a little after launch (so startup stays light), then once a day.
+    /// Looks a little after launch (so startup stays light), then every few minutes,
+    /// whether the schedule from the settings says a check is due. Polling instead of
+    /// one long timer keeps it right across sleep and changed settings.
     func start() {
         guard isEnabled else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
-            self?.check(userInitiated: false)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in self?.checkIfDue() }
+        let timer = Timer.scheduledTimer(withTimeInterval: 5 * 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.checkIfDue() }
         }
-        timer = Timer.scheduledTimer(withTimeInterval: 24 * 60 * 60, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.check(userInitiated: false) }
-        }
+        timer.tolerance = 60
+        self.timer = timer
+    }
+
+    private func checkIfDue() {
+        let now = Date()
+        guard Preferences.autoCheckForUpdates,
+              retryAfter.map({ now >= $0 }) ?? true,
+              now >= Preferences.nextUpdateCheck(now: now)
+        else { return }
+        check(userInitiated: false)
     }
 
     /// Look for a newer release. A check from the menu always reports back; the
@@ -46,15 +59,18 @@ final class Updater {
             if userInitiated { inform("Automatic updates aren't enabled in this build.") }
             return
         }
-        guard !busy else { return }
-        busy = true
+        guard !isChecking else { return }
+        isChecking = true
 
         Task { [weak self] in
             guard let self else { return }
-            defer { self.busy = false }
+            defer { self.isChecking = false }
             var installing = false
             do {
-                guard let release = try await ReleaseFeed.latest(repo: repo),
+                let latest = try await ReleaseFeed.latest(repo: repo)
+                Preferences.lastUpdateCheck = Date()
+                self.retryAfter = nil
+                guard let release = latest,
                       ReleaseFeed.isVersion(release.version, newerThan: self.currentVersion)
                 else {
                     if userInitiated { self.inform("You're on the latest version (\(self.currentVersion)).") }
@@ -73,6 +89,8 @@ final class Updater {
                 // Quiet about background network hiccups; loud once the user is involved.
                 if userInitiated || installing {
                     self.inform("The update failed: \(error.localizedDescription)")
+                } else {
+                    self.retryAfter = Date().addingTimeInterval(30 * 60)
                 }
             }
         }
