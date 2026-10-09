@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Assets/AppIcon.svg" width="180" alt="Dynamic Island icon">
+  <img src="Assets/AppIcon.svg" width="320" alt="Dynamic Island icon">
 </p>
 
 <h1 align="center">Dynamic Island for Mac</h1>

@@ -63,7 +63,13 @@ Tests/DynamicIslandTests/          Swift Testing suite (+ Fixtures/rust-signed)
 test.sh                            runs `swift test` + `cargo test` (handles CLT-only)
 TESTING.md                         how to test + manual pre-release checklist
 .github/workflows/tests.yml        CI: both suites on macos-latest
-Assets/AppIcon.svg                 app icon source (rasterized at build time)
+Assets/AppIcon.svg                 app icon source (AppIcon.png is used if there's no
+                                   SVG) — just the artwork, any shape. Rendered with
+                                   AppKit at build time: empty margin trimmed, centered
+                                   on a dark squircle in Apple's grid (824 px body on
+                                   1024). macOS 26 puts icons that don't fill that shape
+                                   on a grey tile. qlmanage isn't used — its thumbnails
+                                   always get a white background.
 Assets/update_public_key.txt       public Ed25519 key for updates (from keygen)
 Helpers/mrhelper.c                 C bridge to the private MediaRemote framework
 Sources/DynamicIsland/
@@ -425,6 +431,7 @@ it. Needs Rust ≥ 1.85 (Cargo edition 2024); its one dependency is
 
 Environment knobs (set per run, or permanently in `.cargo/config.toml`'s `[env]`):
 - `DI_ICON` — `1`/`0` to always/never embed the custom icon instead of asking.
+  The icon is `Assets/AppIcon.svg`, else `Assets/AppIcon.png`.
   Releases always include it.
 - `DI_SIGN_IDENTITY` — code-signing identity; default `-` (ad-hoc). See §11.
 - `DI_SIGNING_KEY_PATH` — where the private update key lives; default
